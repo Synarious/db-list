@@ -1,112 +1,28 @@
-<!DOCTYPE html>
-<html>
-
+<!doctype html>
+<html lang="en">
 <head>
-    <script src="js/results.js"></script>
-    <script src="js/screenshot.js"></script>
-    <script src="js/jquery.min.js"></script>
-    <script src="js/html2canvas.min.js"></script>
-
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
-    </script>
-    <link rel="stylesheet" href="../css/info.css">
-
-
-
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Troubleshooting · Deviant Bound</title>
+    <link rel="stylesheet" href="../css/app.css">
 </head>
-
 <body>
-    <div class=menubar>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light" style="display: flex;flex-direction: row;">
-            <a class="navbar-brand" href="#">DB</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
-                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                <ul class="navbar-nav">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="https://deviantbound.com">Home<span
-                                class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://deviantbound.com">Join Our Community</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">BDSM Test</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown"
-                            aria-haspopup="true" aria-expanded="false">
-                            Resources
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                            <a class="dropdown-item" href="#">Action</a>
-                            <a class="dropdown-item" href="#">Another action</a>
-                            <a class="dropdown-item" href="#">Something else here</a>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    </div>
-    <div class="page-title">About This Project & FAQ</div>
-    <div class="jumbotron" style="margin-left: 10%; margin-right:10%; margin-top:6em; background-color: #212124;">
-        <h2>I want to restart!</h2>
-        <p>Method 1: Clearing your history. Sometimes local storage is
-            denoted under the "Advance Clean" and is not cleaned by default and must be ticked by the user in the
-            process.
-        </p>
-        <p>Method 2: You can use your browser's Dev console to clear the local storage. Important: You must be on the
-            page deviantbound.com AND not on selection screen as it can cause issues. Instead do this on result page to
-            prevent issues. For Chrome: press F12 (typically) and go to Application > Local Storage (Then Right Click
-            Clear). Firefox is similar but calls the tab Storage instead of application. </p>
-        <p>Method 2: Use Incognito on your browser. </p>
-        <h2>Why is one kink always selected?</h2>
-        <p>Due to how the site works it defaults to needing something to be selected, therfore all users must choose
-            their opinion of being dominant. If you really wish not to select this you can set the local storage entry
-            called r_rating_dominant_XXXXXX all to false (Like using method 2 above). I suggest doing this on the
-            results page (rather than selection page), then refresh the results page.
-        </p>
-        <h2>My phone is not taking a screenshot!</h2>
-        <p>If you're using iOS device please refer to our guide here: <a
-                href="https://kinklist.deviantbound.com/docs/ios-devices.html">Saving The Results On iOS Devices</a>
-            this
-            guide a workaround due to issues with the Safari/iOS devices. If your issue is on Android try to use Chrome
-            (From the app store). If you are neither
-        </p>
-        <h2>One or more of my selections are missing or incorrect.</h2>
-        <p>Double check the category and check the selections you made in the previous page, there is no known issues
-            that would cause incorrect results. If the issue persist please contact@deviantbound.com with the type of
-            device you
-            have and your browser. I will then see if I can replicate it and fix it if needed. Additional you can try
-            resetting selections using the methods above, this may or may not fix the issue.
-        </p>
-        <h2>If you have any issue not described here and still need help:</h2>
-        <p>Send me an email at contact@devinatbound.com with detailed email of what is happening. Please include your
-            device type, your browser and browser's version if possible.
-        </p>
-        <h2>Supported Devices</h2>
-        <p>Chrome v97.0.4692.99 + (Recommeded - Supported)</p>
-        <p>Firefox v96.0.2 + (Supported)</p>
-        <p>macOS - Chrome/Firefox + (Supported)</p>
-        <p>Chrome - Android 12 + (Supported)</p>
-        <p>iOS - Chrome/Firefox/Other (NOT SUPPORTED) - <a
-                href="ios-devices.html">See Work Around HERE </a></p>
-        <p>iOS - Safari (NOT SUPPORTED) - <a href="ios-devices.html">See Work
-                Around HERE </a></p>
-    </div>
-    <div class="bottom-box">
-        <a href="../index.html" class="btn btn-block btn-primary mb-3" style="margin-right: 33%" id="">Return To Selection
-            Area</a>
-        <p>Copyright © 2022 - Deviant Bound</p>
-    </div>
-    </div>
-    </div>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main id="main" class="panel" tabindex="-1">
+        <h1>Troubleshooting</h1>
+        <h2>Start over</h2>
+        <p>On the checklist, open Instructions &amp; backups, select Clear saved answers, and confirm. To clear one rating, choose Left blank for that topic.</p>
+        <h2>Answers do not save</h2>
+        <p>Allow this site to use browser storage. Use the same browser profile and site address when you return to the checklist.</p>
+        <h2>Move or restore saved answers</h2>
+        <p>Find the backup controls under Instructions &amp; backups on the checklist or under Answer backup on the results page. Select Export backup to download a copy. In the browser where you want to restore your answers, select Import backup, choose the downloaded JSON file, and confirm. This replaces all saved answers in that browser, including answers left blank in the backup.</p>
+        <h2>Read aloud is unavailable</h2>
+        <p>Install an English speech voice through your device’s settings, then reload the page. The app uses voices that your browser identifies as local.</p>
+        <h2>Image download fails</h2>
+        <p>Try Download text on the results page or follow the <a href="ios-devices.html">iPhone and iPad download guide</a>.</p>
+        <p>For help, email <a href="mailto:contact@deviantbound.com">contact@deviantbound.com</a>.</p>
+        <p><a href="../index.html">Return to the checklist</a></p>
+    </main>
 </body>
-
-
 </html>
