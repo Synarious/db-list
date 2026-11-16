@@ -6,21 +6,37 @@
     <meta name="referrer" content="no-referrer">
     <title>About and privacy · Deviant Bound</title>
     <link rel="stylesheet" href="../css/app.css">
+    <script defer src="../js/contact-email.js"></script>
 </head>
-<body>
+<body class="help-page">
     <a class="skip-link" href="#main">Skip to content</a>
-    <main id="main" class="panel" tabindex="-1">
-        <h1>About and privacy</h1>
-        <h2>What is this checklist for?</h2>
-        <p>Deviant Bound’s checklist helps adults discuss interests and boundaries with partners. You can review your choices and download a text file or image to share.</p>
-        <h2>Where are my answers stored?</h2>
-        <p>The app stores answers for this site in your browser profile. Clearing site data can erase them. The app creates downloads and reads backup files on your device. The app does not send ratings to the server. Read aloud uses a locally installed voice, and anyone nearby may hear it.</p>
-        <p>To keep a copy, use Export backup under Instructions &amp; backups on the checklist or under Answer backup on the results page. The JSON file contains your ratings in plain text. Store it somewhere private.</p>
-        <p>Open Instructions &amp; backups on the checklist and select Clear saved answers to delete the app’s saved ratings from this browser. Downloads remain until you delete them separately. Age confirmation is stored for the browser tab’s session.</p>
-        <h2>Project background</h2>
-        <p>This free tool was inspired by <a href="https://goctionni.github.io/KinkList/v1.0.2.html">the original KinkList</a> and built for the Deviant Bound community.</p>
-        <p>For help, email <a href="mailto:contact@deviantbound.com">contact@deviantbound.com</a>.</p>
-        <p><a href="../index.html">Return to the checklist</a></p>
+    <main id="main" tabindex="-1">
+        <nav class="help-nav" aria-label="Help navigation">
+            <a class="button secondary" href="../index.html">← Checklist</a>
+            <a href="troubleshooting.html">Troubleshooting</a>
+        </nav>
+        <header class="help-header">
+            <p class="eyebrow">Deviant Bound</p>
+            <h1>About and privacy</h1>
+        </header>
+        <section class="panel help-topic">
+            <h2>What is this checklist for?</h2>
+            <p>Deviant Bound’s checklist helps adults discuss interests and boundaries with partners. You can review your choices and download a text file or image to share.</p>
+        </section>
+        <section class="panel help-topic">
+            <h2>Where are my answers stored?</h2>
+            <p>The app stores answers for this site in your browser profile. Clearing site data can erase them. The app creates downloads and reads backup files on your device. The app does not send ratings to the server.</p>
+            <p>Customize adds optional profile details to the top of your results and shared downloads. To keep a copy of your ratings and profile, use Export backup under Menu → Instructions &amp; backups on the checklist or under Answer backup on the results page. The JSON file contains these details in plain text. Store it somewhere private.</p>
+            <p>Choose Clear saved answers under Menu → Instructions &amp; backups to delete your ratings and profile from this browser. Downloads remain until you delete them separately. Age confirmation is stored for the browser tab’s session.</p>
+        </section>
+        <section class="panel help-topic">
+            <h2>Project background</h2>
+            <p>This free tool was inspired by <a href="https://goctionni.github.io/KinkList/v1.0.2.html">the original KinkList</a> and built for the Deviant Bound community.</p>
+        </section>
+        <section class="panel help-topic help-contact">
+            <h2>Contact</h2>
+            <div id="contact-email"></div>
+        </section>
     </main>
 </body>
 </html>

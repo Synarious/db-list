@@ -10,15 +10,17 @@
     <link rel="stylesheet" href="css/app.css">
     <script defer src="js/html2canvas.min.js"></script>
     <script defer src="js/catalog.js"></script>
+    <script defer src="js/advanced-catalog.js"></script>
+    <script defer src="js/image-themes.js"></script>
+    <script defer src="js/backup-v1.js"></script>
     <script defer src="js/answers.js"></script>
     <script defer src="js/answer-backups.js"></script>
-    <script defer src="js/rating-faces.js"></script>
+    <script defer src="js/rating-icons.js"></script>
     <script defer src="js/age-gate.js"></script>
-    <script defer src="js/speech.js"></script>
     <script defer src="js/image-sheet.js"></script>
     <script defer src="js/results.js"></script>
 </head>
-<body>
+<body class="results-page">
     <a class="skip-link" href="#main">Skip to content</a>
     <main id="main" tabindex="-1">
         <section id="age-gate" class="panel" aria-labelledby="age-heading">
@@ -39,26 +41,34 @@
                     </div>
                     <div class="actions">
                         <a class="button secondary" href="index.html">Edit answers</a>
-                        <button type="button" id="download-text" class="secondary">Download text (.txt)</button>
-                        <button type="button" id="download-image">Download image (.png)</button>
+                        <button type="button" id="download-text" class="secondary" disabled>Download text (.txt)</button>
+                        <button type="button" id="download-image" disabled>Download image (.png)</button>
                     </div>
                 </div>
                 <div class="checklist-guide">
                     <div id="instructions">
                         <p>Open a category to review its ratings. Share downloaded results only with people you choose.</p>
-                        <p class="note">Read aloud uses a voice on this device. Others nearby may hear it.</p>
                     </div>
                     <div class="actions">
-                        <button type="button" id="read-intro" class="secondary">Read instructions aloud</button>
                         <a href="docs/ios-devices.html">iPhone and iPad help</a>
                     </div>
                 </div>
                 <p id="status" role="status"></p>
             </header>
+            <section id="example-notice" class="panel example-notice" aria-labelledby="example-heading" hidden>
+                <div>
+                    <h2 id="example-heading">Your checklist is still in progress</h2>
+                    <p id="example-message" class="note"></p>
+                </div>
+                <div class="actions">
+                    <button type="button" class="secondary" id="view-own-results">View my results</button>
+                    <a class="button secondary" href="index.html">Continue checklist</a>
+                </div>
+            </section>
             <section class="panel answer-backups" aria-labelledby="backup-heading">
                 <div>
                     <h2 id="backup-heading">Answer backup</h2>
-                    <p class="note">Save a copy for later or move your answers to another browser or device. Keep this file private because it contains your ratings.</p>
+                    <p class="note">Backups include your saved ratings and profile. Keep the file private.</p>
                 </div>
                 <div class="actions">
                     <button type="button" id="export-answers" class="secondary">Export backup (.json)</button>
@@ -68,7 +78,8 @@
                 <p id="backup-status" role="status"></p>
             </section>
             <article id="capture" class="panel" aria-labelledby="summary-heading">
-                <h2 id="summary-heading">BDSM Kink List</h2>
+                <h2 id="summary-heading" tabindex="-1">BDSM Kink List</h2>
+                <ul id="results-profile" class="results-profile" aria-label="Profile details" hidden></ul>
                 <p id="consent-note" class="note">These are my preferences. Let’s compare what we’re both interested in and talk about boundaries before trying anything.</p>
                 <p id="results-progress" class="result-count" role="status"></p>
                 <div class="results-layout">

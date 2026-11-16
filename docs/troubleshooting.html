@@ -6,23 +6,44 @@
     <meta name="referrer" content="no-referrer">
     <title>Troubleshooting · Deviant Bound</title>
     <link rel="stylesheet" href="../css/app.css">
+    <script defer src="../js/contact-email.js"></script>
 </head>
-<body>
+<body class="help-page">
     <a class="skip-link" href="#main">Skip to content</a>
-    <main id="main" class="panel" tabindex="-1">
-        <h1>Troubleshooting</h1>
-        <h2>Start over</h2>
-        <p>On the checklist, open Instructions &amp; backups, select Clear saved answers, and confirm. To clear one rating, choose Left blank for that topic.</p>
-        <h2>Answers do not save</h2>
-        <p>Allow this site to use browser storage. Use the same browser profile and site address when you return to the checklist.</p>
-        <h2>Move or restore saved answers</h2>
-        <p>Find the backup controls under Instructions &amp; backups on the checklist or under Answer backup on the results page. Select Export backup to download a copy. In the browser where you want to restore your answers, select Import backup, choose the downloaded JSON file, and confirm. This replaces all saved answers in that browser, including answers left blank in the backup.</p>
-        <h2>Read aloud is unavailable</h2>
-        <p>Install an English speech voice through your device’s settings, then reload the page. The app uses voices that your browser identifies as local.</p>
-        <h2>Image download fails</h2>
-        <p>Try Download text on the results page or follow the <a href="ios-devices.html">iPhone and iPad download guide</a>.</p>
-        <p>For help, email <a href="mailto:contact@deviantbound.com">contact@deviantbound.com</a>.</p>
-        <p><a href="../index.html">Return to the checklist</a></p>
+    <main id="main" tabindex="-1">
+        <nav class="help-nav" aria-label="Help navigation">
+            <a class="button secondary" href="../index.html">← Checklist</a>
+            <a href="about.html">About and privacy</a>
+        </nav>
+        <header class="help-header">
+            <p class="eyebrow">Deviant Bound</p>
+            <h1>Troubleshooting</h1>
+        </header>
+        <section class="panel help-topic">
+            <h2>Start over</h2>
+            <p>On the checklist, open Menu → Instructions &amp; backups, select Clear saved answers, and confirm. To clear one rating, choose Left blank for that topic.</p>
+        </section>
+        <section class="panel help-topic">
+            <h2>Answers do not save</h2>
+            <p>Allow this site to use browser storage. Use the same browser profile and site address when you return to the checklist.</p>
+        </section>
+        <section class="panel help-topic">
+            <h2>Move or restore saved answers</h2>
+            <p>Find the backup controls under Menu → Instructions &amp; backups on the checklist or under Answer backup on the results page. Export a copy as JSON. To import it, choose Import backup, select the file, and confirm.</p>
+            <p>Import fills blank fields with compatible values and keeps existing answers and profile details. It skips changed or removed questions, duplicate ratings, and invalid values. Older backups rely on known question IDs, so entries with an ambiguous meaning are skipped.</p>
+        </section>
+        <section class="panel help-topic">
+            <h2>Using a screen reader</h2>
+            <p>Use your screen reader’s headings and form controls to navigate. With a keyboard, use Tab to reach Previous, Next, or the section picker at the bottom. Press Enter or Space to open the picker. Use the arrow keys to move between ratings for an option.</p>
+        </section>
+        <section class="panel help-topic">
+            <h2>Image download fails</h2>
+            <p>Try Download text on the results page or follow the <a href="ios-devices.html">iPhone and iPad download guide</a>.</p>
+        </section>
+        <section class="panel help-topic help-contact">
+            <h2>Contact</h2>
+            <div id="contact-email"></div>
+        </section>
     </main>
 </body>
 </html>

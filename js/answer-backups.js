@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    const { createAnswerBackup, parseAnswerBackup, replaceAnswers } = DBList;
-    const maxBackupBytes = 64 * 1024;
+    const { createAnswerBackup, parseAnswerBackup, importChecklist } = DBList;
+    const maxBackupBytes = 1024 * 1024;
 
     function downloadFile(blob, name) {
         const url = URL.createObjectURL(blob);
@@ -44,7 +44,7 @@
             status.textContent = '';
             try {
                 if (file.size > maxBackupBytes) {
-                    status.textContent = 'This file is too large. Choose a checklist backup of 64 KB or less.';
+                    status.textContent = 'This file is too large. Choose a checklist backup of 1 MB or less.';
                     return;
                 }
 
@@ -56,30 +56,36 @@
                     return;
                 }
 
-                let answers;
+                let checklist;
                 try {
-                    answers = parseAnswerBackup(text);
+                    checklist = parseAnswerBackup(text);
                 } catch (error) {
                     status.textContent = error.message;
                     return;
                 }
 
-                const count = Object.keys(answers).length;
-                const summary = count === 1 ? '1 rated answer' : count + ' rated answers';
-                if (!window.confirm('Restore ' + summary + ' from this backup? This replaces all saved answers in this browser.')) {
+                const count = Object.keys(checklist.answers).length + Object.keys(checklist.profile).length;
+                if (!count) {
+                    status.textContent = 'No compatible entries found. Skipped ' + checklist.skipped + '.';
+                    return;
+                }
+                if (!window.confirm('Import up to ' + count + ' compatible entries into blank fields? Existing values will be kept. ' +
+                    checklist.skipped + ' incompatible entries will be skipped.')) {
                     status.textContent = 'Import canceled.';
                     return;
                 }
 
+                let report;
                 try {
-                    await replaceAnswers(answers);
+                    report = await importChecklist(checklist);
                 } catch {
                     status.textContent = 'Could not save the imported answers. Check your browser storage settings.';
                     return;
                 }
 
                 refresh();
-                status.textContent = 'Restored ' + summary + ' from the backup.';
+                status.textContent = 'Added ' + report.added + ' · Already matched ' + report.matching +
+                    ' · Conflicts kept ' + report.conflicts + ' · Skipped ' + report.skipped;
             } finally {
                 importButton.disabled = false;
             }

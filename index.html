@@ -9,14 +9,17 @@
     <link rel="icon" href="img/favicon/favicon-32x32.png">
     <link rel="stylesheet" href="css/app.css">
     <script defer src="js/catalog.js"></script>
+    <script defer src="js/advanced-catalog.js"></script>
+    <script defer src="js/topic-descriptions.js"></script>
+    <script defer src="js/image-themes.js"></script>
+    <script defer src="js/backup-v1.js"></script>
     <script defer src="js/answers.js"></script>
     <script defer src="js/answer-backups.js"></script>
-    <script defer src="js/rating-faces.js"></script>
+    <script defer src="js/rating-icons.js"></script>
     <script defer src="js/age-gate.js"></script>
-    <script defer src="js/speech.js"></script>
     <script defer src="js/questionnaire.js"></script>
 </head>
-<body>
+<body class="checklist-page">
     <a class="skip-link" href="#main">Skip to content</a>
     <main id="main" tabindex="-1">
         <section id="age-gate" class="panel" aria-labelledby="age-heading">
@@ -29,50 +32,100 @@
             <p id="age-status" role="status">If these buttons stay disabled, reload the page with JavaScript enabled and all app files available.</p>
         </section>
         <section id="app" hidden aria-labelledby="app-heading">
+            <div class="checklist-bar">
+                <nav class="checklist-menu" aria-label="Checklist menu">
+                    <details id="main-menu">
+                        <summary>Menu</summary>
+                        <ul>
+                            <li><button type="button" class="secondary" id="open-instructions">Instructions &amp; backups</button></li>
+                            <li><a href="docs/about.html">About and privacy</a></li>
+                            <li><a href="docs/troubleshooting.html">Troubleshooting</a></li>
+                        </ul>
+                    </details>
+                    <button type="button" class="secondary" id="open-customize" aria-haspopup="dialog">Customize</button>
+                </nav>
+                <a class="button review-link" href="results.html">Review results</a>
+            </div>
             <header class="panel checklist-header">
                 <div class="checklist-heading">
                     <div>
                         <p class="eyebrow">Deviant Bound</p>
                         <h1 id="app-heading" tabindex="-1">BDSM Kink List</h1>
                     </div>
-                    <a class="button" href="results.html">Review results</a>
+                    <a id="checklist-mode" class="button secondary" href="?mode=advanced#section-advanced-restraints">Advanced options</a>
                 </div>
-                <p class="checklist-intro note">Pick a face for each option, or choose Left blank to skip it.</p>
-                <details class="checklist-tools">
-                    <summary>Instructions &amp; backups</summary>
-                    <div class="checklist-tools-content">
-                        <section aria-labelledby="instructions-heading">
-                            <h2 id="instructions-heading">Instructions</h2>
-                            <div id="instructions">
-                                <p>Pick a face for each option, or choose Left blank to skip it.</p>
-                                <p>Always ask for consent and respect a change of mind.</p>
-                                <p>Answers stay in this browser. Clear saved answers when you finish on a shared device.</p>
-                                <p>Shared activities now have one rating. Matching old ratings carry over. If your old ratings differed or one was blank, choose a new rating.</p>
-                            </div>
-                            <button type="button" id="read-intro" class="secondary">Read instructions aloud</button>
-                            <p class="note">Uses a voice on this device. Others nearby may hear it.</p>
-                        </section>
-                        <section aria-labelledby="backup-heading">
-                            <h2 id="backup-heading">Saved answers</h2>
-                            <p>Answers stay in this browser. Export a backup to restore them later or move them to another device. Keep the file private because it contains your ratings.</p>
-                            <div class="actions">
-                                <button type="button" id="export-answers" class="secondary">Export backup (.json)</button>
-                                <button type="button" id="import-answers" class="secondary">Import backup</button>
-                                <button type="button" id="clear-answers" class="secondary">Clear saved answers</button>
-                                <input type="file" id="answer-backup-file" accept=".json,application/json" hidden>
-                            </div>
-                            <p id="backup-status" role="status"></p>
-                        </section>
-                    </div>
-                </details>
+                <ul id="checklist-rating-key" class="checklist-rating-key" aria-label="Rating key"></ul>
                 <p id="status" role="status"></p>
             </header>
-            <nav id="checklist-sections" class="checklist-sections" aria-label="Jump to a checklist section" tabindex="-1"></nav>
+            <dialog id="instructions-dialog" aria-labelledby="instructions-dialog-heading">
+                <div class="dialog-heading">
+                    <h2 id="instructions-dialog-heading">Instructions &amp; backups</h2>
+                    <form method="dialog"><button type="submit" class="secondary">Close</button></form>
+                </div>
+                <div class="checklist-tools-content">
+                    <section aria-labelledby="instructions-heading">
+                        <h2 id="instructions-heading">Instructions</h2>
+                        <div id="instructions">
+                            <p>Pick a rating icon for each option, or choose Left blank to skip it.</p>
+                            <p>Always ask for consent and respect a change of mind.</p>
+                            <p>Answers stay in this browser. Clear saved answers when you finish on a shared device.</p>
+                            <p>Shared activities now have one rating. Matching old ratings carry over. If your old ratings differed or one was blank, choose a new rating.</p>
+                        </div>
+                    </section>
+                    <section aria-labelledby="backup-heading">
+                        <h2 id="backup-heading">Saved answers</h2>
+                        <p>Export a backup to move your ratings and saved profile to another device. Keep the file private.</p>
+                        <div class="actions">
+                            <button type="button" id="export-answers" class="secondary">Export backup (.json)</button>
+                            <button type="button" id="import-answers" class="secondary">Import backup</button>
+                            <button type="button" id="clear-answers" class="secondary">Clear saved answers</button>
+                            <input type="file" id="answer-backup-file" accept=".json,application/json" hidden>
+                        </div>
+                        <p id="backup-status" role="status"></p>
+                    </section>
+                </div>
+            </dialog>
+            <dialog id="customize-dialog" aria-labelledby="customize-heading">
+                <div class="dialog-heading">
+                    <h2 id="customize-heading">Customize</h2>
+                    <form method="dialog"><button type="submit" class="secondary">Close</button></form>
+                </div>
+                <p class="note" id="customize-note">Fill in the details you want shown at the top of your results and downloads. All fields are optional.</p>
+                <form id="customize-form" aria-describedby="customize-note">
+                    <label>Name <input name="name" type="text" maxlength="60"></label>
+                    <label>BDSM role <input name="role" type="text" maxlength="60" placeholder="e.g. Switch"></label>
+                    <label>Kink <input name="kink" type="text" maxlength="60"></label>
+                    <label>Age <input name="age" type="number" min="18" step="1" inputmode="numeric"></label>
+                    <fieldset>
+                        <legend>Partner age limits</legend>
+                        <div class="partner-age-fields">
+                            <label>Minimum <input name="partnerMinAge" type="number" min="18" step="1" inputmode="numeric"></label>
+                            <label>Maximum <input name="partnerMaxAge" type="number" min="18" step="1" inputmode="numeric"></label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Image export theme</legend>
+                        <div id="image-theme-picker"></div>
+                    </fieldset>
+                    <p id="customize-status" role="status"></p>
+                    <button type="submit">Save details</button>
+                </form>
+            </dialog>
             <div id="questionnaire"></div>
-            <p class="actions">
-                <a class="button" href="results.html">Review results</a>
-                <a href="#checklist-sections">Back to section links</a>
-            </p>
+            <nav class="checklist-pagination" aria-label="Checklist pages">
+                <details id="section-picker">
+                    <summary id="checklist-page-number">Sections</summary>
+                    <ul></ul>
+                </details>
+                <div class="checklist-progress">
+                    <progress id="checklist-progress" aria-label="Checklist completion" aria-describedby="checklist-progress-label" max="1"></progress>
+                    <span id="checklist-progress-label">Loading progress…</span>
+                </div>
+                <div class="checklist-page-actions">
+                    <a id="previous-section" class="button secondary" hidden>Previous</a>
+                    <a id="next-section" class="button" href="results.html">Next</a>
+                </div>
+            </nav>
         </section>
     </main>
     <footer>
