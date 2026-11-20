@@ -1,13 +1,13 @@
 (function () {
     'use strict';
 
-    const { categories } = DBList;
+    const { categories, visibleCategories } = DBList;
 
-    // The order matches the original results page's precedence for conflicting legacy answers.
     const ratings = [
         ['favorite', 'Favorite'],
         ['like', 'Like'],
-        ['maybe', 'Open to discussing'],
+        ['willing-to-try', 'Willing to try'],
+        ['maybe', 'Let’s talk about it'],
         ['not-interested', 'I’d rather skip this'],
         ['limit', 'Off the table'],
     ];
@@ -18,25 +18,47 @@
         return value === 'limit' && group === 'partner' ? 'Dealbreaker for me' : labels[value];
     }
 
-    const answersKey = 'db-list.answers.v1';
+    const answersKey = DBListThemes.storageKey;
+    const defaultProfileId = 'original';
+    const profileNameLimit = 80;
     const backupFormat = 'deviant-bound-checklist';
     const backupVersion = 2;
     const perAnswerKey = id => 'db-list.answer.' + id;
     const legacyKey = (id, rating) => 'r_' + id + '-' + rating;
-    const legacyRatings = ratings.map(([rating]) => rating).reverse();
 
-    const choices = categories.flatMap(({ group, topics, advanced }) => topics.flatMap(({ choices }) =>
-        choices.map(choice => ({ ...choice, group, advanced }))));
-    const choiceMeanings = new Map(choices.map(({ id, group, prompt }) => [id, [group, prompt]]));
+    const choices = categories.flatMap(({ group, topics }) => topics.flatMap(({ choices }) =>
+        choices.map(choice => ({ ...choice, group }))));
+    const choiceMeanings = new Map(choices.map(({ id, group, prompt }) =>
+        [id, { group, prompt }]));
+    const revisedIds = new Set(choices.filter(choice => choice.legacyPrompt && choice.legacyPrompt !== choice.prompt).map(choice => choice.id));
     const choiceIds = new Set(choiceMeanings.keys());
-    const visibleChoiceIds = choices.filter(choice => DBList.advancedMode || !choice.advanced).map(choice => choice.id);
+    const visibleChoices = visibleCategories.flatMap(({ topics }) => topics.flatMap(({ choices }) => choices));
     if (choiceIds.size !== choices.length) throw new Error('Duplicate rating IDs in the checklist catalog.');
-    const profileFields = ['name', 'role', 'kink', 'age', 'partnerMinAge', 'partnerMaxAge', 'imageTheme'];
+    const detailFields = ['name', 'role', 'age', 'imageTheme'];
+    const legacyDetailFields = ['kink', 'partnerMinAge', 'partnerMaxAge'];
+    const genderLabels = { female: 'Female', male: 'Male', another: 'Another gender' };
+    const partnerLabels = { female: 'Female partners', male: 'Male partners', anyone: 'Anyone' };
+    const questionPreferenceOptions = {
+        gender: ['unspecified', ...Object.keys(genderLabels)],
+        partnerGender: Object.keys(partnerLabels),
+        shareGender: ['yes', 'no'],
+        mode: ['standard', 'advanced'],
+        fantasy: ['0', '1'],
+    };
+    const questionPreferenceFields = Object.keys(questionPreferenceOptions);
+    const profileFields = [...detailFields, ...legacyDetailFields, ...questionPreferenceFields];
     // These are the published v1 rating meanings. Keep them when relabeling a rating.
     const v1Labels = {
         favorite: 'Favorite', like: 'Like', maybe: 'Open to discussing',
         'not-interested': 'I’d rather skip this', limit: 'Off the table',
     };
+    // The order matches the original results page's precedence for conflicting legacy answers.
+    const legacyRatings = Object.keys(v1Labels).reverse();
+
+    function backupRatingLabel(value, group) {
+        // Backups keep the published label even when the displayed wording changes.
+        return value === 'maybe' ? v1Labels.maybe : ratingLabel(value, group);
+    }
     const mergedChoices = choices.filter(choice => choice.mergedIds);
     const mergedIds = new Set(mergedChoices.flatMap(choice => choice.mergedIds));
     const splitAnswers = new Map(
@@ -52,6 +74,8 @@
         'rating-taller', 'rating-average', 'rating-livingnearby', 'shared-inperson', 'inperson-r', 'inperson-g',
         'paddle-r', 'rating-paddle', 'masculation-r', 'masculation-g', 'gimpfullbody-r', 'gimpfullbody-g',
         'analtoys', 'analtoys-r', 'analtoys-g', 'buttplug-r', 'buttplug-g',
+        'adv-detail-barebacking-self', 'adv-detail-barebacking-partner',
+        'adv-detail-excessive-precum', 'adv-detail-excessive-semen', 'adv-detail-sloppy-seconds', 'adv-detail-thick-sticky-cum',
     ]);
     const oldIds = new Set([
         ...mergedIds, ...splitAnswers.keys(), ...retiredIds,
@@ -94,6 +118,7 @@
     function readOldAnswers(storage) {
         const answers = Object.create(null);
         for (const { id, previousIds } of choices) {
+            if (revisedIds.has(id) || ['rating-lightimpact', 'rating-heavyimpact'].includes(id)) continue;
             const value = readOldAnswer(storage, id, previousIds);
             if (value) answers[id] = value;
         }
@@ -110,9 +135,9 @@
             if (!answers[id] && ratings.size === 1) [answers[id]] = ratings;
             for (const oldId of mergedIds) delete answers[oldId];
         }
-        for (const [oldId, newIds] of splitAnswers) {
+        for (const oldId of splitAnswers.keys()) {
             if (!answers[oldId]) continue;
-            for (const id of newIds) answers[id] ??= answers[oldId];
+            // A shared answer does not establish either directional preference.
             delete answers[oldId];
         }
         for (const id of retiredIds) delete answers[id];
@@ -122,14 +147,17 @@
     function cleanProfile(data) {
         if (!isRecord(data)) throw new Error('Profile details must be an object.');
         const profile = {};
-        if (typeof data.imageTheme === 'string' && Object.hasOwn(DBList.imageThemes, data.imageTheme)) {
+        if (typeof data.imageTheme === 'string' && Object.hasOwn(DBListThemes.options, data.imageTheme)) {
             profile.imageTheme = data.imageTheme;
+        }
+        for (const [key, options] of Object.entries(questionPreferenceOptions)) {
+            if (options.includes(data[key])) profile[key] = data[key];
         }
         for (const key of ['name', 'role', 'kink']) {
             const value = data[key];
             if (value === undefined || value === '') continue;
             if (typeof value !== 'string' || value.length > 60 || /[\r\n]/.test(value)) {
-                throw new Error('Name, role, and kink must each be 60 characters or fewer.');
+                throw new Error('Profile text must fit on one line and be 60 characters or fewer.');
             }
             if (value.trim()) profile[key] = value.trim();
         }
@@ -170,42 +198,200 @@
         return { profile, skipped };
     }
 
-    function profileLines({ name, role, kink, age, partnerMinAge, partnerMaxAge }) {
-        let partnerAges;
-        if (partnerMinAge && partnerMaxAge) {
-            partnerAges = partnerMinAge === partnerMaxAge ? String(partnerMinAge) : partnerMinAge + '–' + partnerMaxAge;
-        } else if (partnerMinAge) {
-            partnerAges = partnerMinAge + '+';
-        } else if (partnerMaxAge) {
-            partnerAges = 'Up to ' + partnerMaxAge;
-        }
+    function profileLines({ name, role, age, gender, partnerGender, shareGender }) {
         return [
             name && 'Name: ' + name,
             role && 'BDSM role: ' + role,
-            kink && 'Kink: ' + kink,
+            shareGender === 'yes' && genderLabels[gender] && 'Gender: ' + genderLabels[gender],
+            shareGender === 'yes' && partnerLabels[partnerGender] && 'Interested in: ' + partnerLabels[partnerGender],
             age && 'Age: ' + age,
-            partnerAges && 'Partner ages: ' + partnerAges,
         ].filter(Boolean);
     }
 
-    function checklistProgress(answers) {
-        return { total: visibleChoiceIds.length, rated: visibleChoiceIds.filter(id => answers[id]).length };
+    function questionContext({ gender = 'unspecified', partnerGender = 'anyone' } = {}) {
+        const defaults = { male: 'penis', female: 'vulva' };
+        return {
+            selfGender: gender,
+            partnerGender,
+            selfAnatomy: partnerGender === 'anyone' ? 'all' : defaults[gender] ?? 'all',
+            partnerAnatomy: defaults[partnerGender] ?? 'all',
+        };
+    }
+
+    function isChoiceApplicable({ requirements }, context) {
+        if (!requirements) return true;
+        const { exclude = {}, ...required } = requirements;
+        return Object.entries(exclude).every(([field, value]) => context[field] !== value) &&
+            Object.entries(required).every(([field, value]) =>
+                context[field] === value || context[field] === 'all' || context[field] === 'anyone');
+    }
+
+    function checklistProgress(answers, context = questionContext()) {
+        const choices = visibleChoices.filter(choice => isChoiceApplicable(choice, context));
+        return { total: choices.length, rated: choices.filter(({ id }) => answers[id]).length };
     }
 
     function readChecklist(storage = localStorage, saved = storage.getItem(answersKey)) {
         if (saved === null) return { answers: readOldAnswers(storage), profile: {} };
+        return cleanSavedChecklist(JSON.parse(saved));
+    }
 
-        const data = JSON.parse(saved);
+    function cleanSavedChecklist(data) {
         if (!isRecord(data)) throw new Error('Invalid saved answers.');
         const wrapped = Object.hasOwn(data, 'answers');
         const savedAnswers = wrapped ? data.answers : data;
         if (!isRecord(savedAnswers)) throw new Error('Invalid saved answers.');
         const answers = Object.create(null);
         for (const [id, value] of Object.entries(savedAnswers)) {
+            if (data.questionVersion !== 2 && revisedIds.has(id)) continue;
+            if (!wrapped && ['rating-lightimpact', 'rating-heavyimpact'].includes(id)) continue;
             if (value && isKnownChoice(id) && isRating(value)) answers[id] = value;
         }
         const profile = wrapped ? readProfilePatch(data.profile).profile : {};
         return { answers: migrateAnswers(answers), profile };
+    }
+
+    function defaultProfile(id, createdAt) {
+        return { id, name: 'My Profile', createdAt };
+    }
+
+    function readProfileState(saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (Array.isArray(data?.savedProfiles)) {
+                return { activeId: data.activeProfileId, profiles: data.savedProfiles };
+            }
+        } catch {
+            // The existing backup recovery flow can replace an unreadable checklist.
+        }
+        const legacyMode = localStorage.getItem(DBList.checklistModeKey);
+        const hasLegacyData = saved !== null || legacyMode !== null ||
+            Object.keys(readOldAnswers(localStorage)).length > 0;
+        return { activeId: defaultProfileId, profiles: hasLegacyData ? [defaultProfile(defaultProfileId, null)] : [], legacyMode };
+    }
+
+    function getSavedProfiles() {
+        const saved = localStorage.getItem(answersKey);
+        const state = readProfileState(saved);
+        const profiles = state.profiles.map(profile => {
+            const { id, name, createdAt } = profile;
+            let answerCount = null;
+            try {
+                const { answers } = readProfileChecklist(saved, state, profile);
+                answerCount = Object.keys(answers).length;
+            } catch {
+                // Keep the profile listed if its checklist is unreadable.
+            }
+            return { id, name, createdAt, answerCount };
+        });
+        return { activeId: state.activeId, profiles };
+    }
+
+    function readSavedChecklist(id) {
+        const saved = localStorage.getItem(answersKey);
+        const state = readProfileState(saved);
+        const selected = state.profiles.find(profile => profile.id === id);
+        if (!selected) throw new Error('This profile is no longer available.');
+        return readProfileChecklist(saved, state, selected);
+    }
+
+    function readProfileChecklist(saved, { activeId, legacyMode }, profile) {
+        if (profile.id !== activeId) return cleanSavedChecklist({ ...profile.checklist, questionVersion: 2 });
+
+        const checklist = readChecklist(localStorage, saved);
+        if (legacyMode === 'advanced') checklist.profile.mode ??= legacyMode;
+        return checklist;
+    }
+
+    function activeProfileId(saved = localStorage.getItem(answersKey)) {
+        try {
+            return JSON.parse(saved)?.activeProfileId ?? defaultProfileId;
+        } catch {
+            return defaultProfileId;
+        }
+    }
+
+    function writeProfileState(checklist, { activeId, profiles }) {
+        // Keep the active checklist in its existing format for view and theme initialization.
+        localStorage.setItem(answersKey, JSON.stringify({
+            ...checklist, questionVersion: 2, activeProfileId: activeId, savedProfiles: profiles,
+        }));
+    }
+
+    function writeChecklist(checklist, saved) {
+        const state = readProfileState(saved);
+        if (!state.profiles.length) state.profiles.push(defaultProfile(state.activeId, new Date().toISOString()));
+        if (state.legacyMode === 'advanced') checklist.profile.mode ??= state.legacyMode;
+        writeProfileState(checklist, state);
+        if (saved === null) removeOldAnswers(localStorage);
+    }
+
+    function editSavedProfiles(edit) {
+        return updateAnswers(() => {
+            const saved = localStorage.getItem(answersKey);
+            const state = readProfileState(saved);
+            const checklist = readChecklist(localStorage, saved);
+            if (state.legacyMode === 'advanced') checklist.profile.mode ??= state.legacyMode;
+            writeProfileState(edit(state, checklist), state);
+            if (saved === null) removeOldAnswers(localStorage);
+            DBListThemes.sync();
+        });
+    }
+
+    function profileName(value) {
+        const name = value.trim();
+        if (!name || name.length > profileNameLimit) throw new Error('Enter a profile name of up to 80 characters.');
+        return name;
+    }
+
+    function newProfileId() {
+        return Array.from(crypto.getRandomValues(new Uint32Array(4))).join('-');
+    }
+
+    function useSavedProfile(state, profile) {
+        const checklist = profile?.checklist ?? { answers: {}, profile: {} };
+        if (profile) delete profile.checklist;
+        state.activeId = profile?.id ?? newProfileId();
+        return checklist;
+    }
+
+    function addSavedProfile(name, { answers = {}, profile = {} } = {}) {
+        name = profileName(name);
+        return editSavedProfiles((state, checklist) => {
+            const active = state.profiles.find(profile => profile.id === state.activeId);
+            if (active) active.checklist = checklist;
+            const created = { id: newProfileId(), name, createdAt: new Date().toISOString() };
+            state.profiles.push(created);
+            state.activeId = created.id;
+            return { answers, profile };
+        });
+    }
+
+    function selectSavedProfile(id) {
+        return editSavedProfiles((state, checklist) => {
+            if (state.activeId === id) return checklist;
+            const selected = state.profiles.find(profile => profile.id === id);
+            if (!selected) throw new Error('This profile is no longer available.');
+            state.profiles.find(profile => profile.id === state.activeId).checklist = checklist;
+            return useSavedProfile(state, selected);
+        });
+    }
+
+    function renameSavedProfile(id, name) {
+        name = profileName(name);
+        return editSavedProfiles((state, checklist) => {
+            const selected = state.profiles.find(profile => profile.id === id);
+            if (!selected) throw new Error('This profile is no longer available.');
+            selected.name = name;
+            return checklist;
+        });
+    }
+
+    function removeSavedProfile(id) {
+        return editSavedProfiles((state, checklist) => {
+            state.profiles = state.profiles.filter(profile => profile.id !== id);
+            return state.activeId === id ? useSavedProfile(state, state.profiles[0]) : checklist;
+        });
     }
 
     function readAnswers() {
@@ -226,13 +412,14 @@
     }
 
     function editChecklist(edit) {
+        const expectedProfile = activeProfileId();
         return updateAnswers(() => {
             const storage = localStorage;
             const saved = storage.getItem(answersKey);
+            if (activeProfileId(saved) !== expectedProfile) throw new Error('The active profile changed.');
             const checklist = readChecklist(storage, saved);
             edit(checklist);
-            storage.setItem(answersKey, JSON.stringify(checklist));
-            if (saved === null) removeOldAnswers(storage);
+            writeChecklist(checklist, saved);
         });
     }
 
@@ -244,17 +431,42 @@
         });
     }
 
-    function saveProfile(profile) {
+    function saveProfileFields(profile, fields) {
+        const cleaned = cleanProfile(profile);
         return editChecklist(checklist => {
-            checklist.profile = cleanProfile(profile);
+            for (const key of fields) {
+                if (Object.hasOwn(cleaned, key)) checklist.profile[key] = cleaned[key];
+                else delete checklist.profile[key];
+            }
         });
     }
 
-    function importChecklist(patch) {
+    function saveProfile(profile) {
+        return saveProfileFields(profile, detailFields).then(DBListThemes.sync);
+    }
+
+    function saveQuestionPreference(key, value) {
+        if (!questionPreferenceFields.includes(key)) throw new Error('Invalid question preference.');
+        return saveProfileFields({ [key]: value }, [key]);
+    }
+
+    function saveQuestionPreferences(preferences) {
+        return saveProfileFields(preferences, Object.keys(preferences).filter(key => questionPreferenceFields.includes(key)));
+    }
+
+    function importChecklist(patch, confirmRecovery, expectedProfile = activeProfileId()) {
         return updateAnswers(() => {
             const storage = localStorage;
             const saved = storage.getItem(answersKey);
-            const checklist = readChecklist(storage, saved);
+            if (activeProfileId(saved) !== expectedProfile) throw new Error('The active profile changed.');
+            let checklist;
+            try {
+                checklist = readChecklist(storage, saved);
+            } catch (error) {
+                if (saved === null || !confirmRecovery) throw error;
+                if (!confirmRecovery()) return null;
+                checklist = { answers: Object.create(null), profile: {} };
+            }
             const report = { added: 0, matching: 0, conflicts: 0, skipped: patch.skipped };
 
             function fill(target, key, value) {
@@ -268,12 +480,19 @@
             for (const [id, value] of Object.entries(patch.answers)) fill(checklist.answers, id, value);
             const min = checklist.profile.partnerMinAge ?? patch.profile.partnerMinAge;
             const max = checklist.profile.partnerMaxAge ?? patch.profile.partnerMaxAge;
+            const wouldExposeLocalPreference = ['gender', 'partnerGender'].some(key =>
+                Object.hasOwn(checklist.profile, key) && checklist.profile[key] !== patch.profile[key]);
             for (const [key, value] of Object.entries(patch.profile)) {
-                if ((key === 'partnerMinAge' || key === 'partnerMaxAge') &&
+                if (key === 'shareGender' && value === 'yes' && checklist.profile.shareGender !== 'yes' &&
+                    wouldExposeLocalPreference) report.conflicts++;
+                else if ((key === 'partnerMinAge' || key === 'partnerMaxAge') &&
                     !Object.hasOwn(checklist.profile, key) && min > max) report.conflicts++;
                 else fill(checklist.profile, key, value);
             }
-            if (report.added) storage.setItem(answersKey, JSON.stringify(checklist));
+            if (report.added) {
+                writeChecklist(checklist, saved);
+                DBListThemes.sync();
+            }
             return report;
         });
     }
@@ -283,14 +502,21 @@
             const storage = localStorage;
             removeOldAnswers(storage);
             storage.removeItem(answersKey);
+            storage.removeItem(DBList.checklistModeKey);
+            DBListThemes.sync();
         });
     }
 
-    function createAnswerBackup() {
-        const { answers, profile } = readChecklist();
+    function createAnswerBackup(profileId) {
+        const { answers, profile } = profileId === undefined ? readChecklist() : readSavedChecklist(profileId);
+        if (profileId === undefined && DBList.advancedMode) profile.mode ??= 'advanced';
+        if (profileId === undefined && DBList.showFantasy) profile.fantasy ??= '1';
+        includeRatedSections(answers, profile);
+        profile.mode ??= 'standard';
+        profile.fantasy ??= '0';
         const entries = Object.entries(answers).map(([id, value]) => {
-            const [group, prompt] = choiceMeanings.get(id);
-            return { id, value, group, prompt, label: ratingLabel(value, group) };
+            const { group, prompt } = choiceMeanings.get(id);
+            return { id, value, group, prompt, label: backupRatingLabel(value, group) };
         });
         return JSON.stringify({ format: backupFormat, version: backupVersion, profile, answers: entries }, null, 2) + '\n';
     }
@@ -329,9 +555,9 @@
         try {
             backup = JSON.parse(text);
         } catch {
-            throw new Error('This file could not be read as JSON. Choose a checklist backup.');
+            throw new Error('This file could not be read as JSON. Choose a MyList backup.');
         }
-        if (backup?.format !== backupFormat) throw new Error('Choose a JSON backup exported from this checklist.');
+        if (backup?.format !== backupFormat) throw new Error('Choose a JSON backup exported from MyList.');
         const legacy = backup.version === 1;
         if (!Number.isSafeInteger(backup.version) || backup.version < 1 ||
             !(legacy ? isRecord(backup.answers) : Array.isArray(backup.answers))) {
@@ -366,14 +592,27 @@
         for (const entry of entries) {
             const { id, value, group, prompt, label } = isRecord(entry) ? entry : {};
             const current = choiceMeanings.get(id);
-            if (duplicateMembers.has(entry) || duplicates.has(id) || !current || current[0] !== group || current[1] !== prompt ||
-                !value || !isRating(value) || label !== ratingLabel(value, group)) {
+            if (duplicateMembers.has(entry) || duplicates.has(id) || !current || current.group !== group ||
+                prompt !== current.prompt ||
+                !value || !isRating(value) || label !== backupRatingLabel(value, group)) {
                 skipped++;
                 continue;
             }
             answers[id] = value;
         }
+        includeRatedSections(answers, profile);
         return { answers, profile, skipped };
+    }
+
+    function includeRatedSections(answers, profile) {
+        // Older backups did not record the view needed to see these ratings.
+        for (const category of categories) {
+            for (const topic of category.topics) {
+                if (!topic.choices.some(choice => answers[choice.id])) continue;
+                if (category.advanced) profile.mode ??= 'advanced';
+                if (topic.fantasy) profile.fantasy ??= '1';
+            }
+        }
     }
 
     function isAnswerStorageEvent(event) {
@@ -383,9 +622,17 @@
             storageArea === localStorage && localStorage.getItem(answersKey) === null;
     }
 
+    function isProfileSelectionEvent(event) {
+        return event.storageArea === localStorage && (event.key === null ||
+            (event.key === answersKey && activeProfileId(event.oldValue) !== activeProfileId(event.newValue)));
+    }
+
     Object.assign(DBList, {
         ratingOptions, ratingLabel, readAnswers, readChecklist, checklistProgress, saveAnswer, clearAnswers,
-        cleanProfile, saveProfile, profileLines, importChecklist,
-        createAnswerBackup, parseAnswerBackup, isAnswerStorageEvent,
+        cleanProfile, readProfilePatch, saveProfile, profileLines, importChecklist, questionContext, isChoiceApplicable,
+        saveQuestionPreference, saveQuestionPreferences, questionPreferenceFields,
+        createAnswerBackup, parseAnswerBackup, includeRatedSections, isAnswerStorageEvent,
+        getSavedProfiles, readSavedChecklist, addSavedProfile, selectSavedProfile, renameSavedProfile, removeSavedProfile,
+        activeProfileId, isProfileSelectionEvent,
     });
 })();

@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const key = 'db-list.adult-confirmed';
+    const key = 'db-list.age-selection';
 
     function mountAdultPage(render) {
         const gate = document.querySelector('#age-gate');
@@ -9,49 +9,66 @@
         const accept = document.querySelector('#accept-age');
         const decline = document.querySelector('#decline-age');
         const status = document.querySelector('#age-status');
+        const note = gate.querySelector('.age-gate-note');
+        let pageSelection;
 
-        function showApp(moveFocus) {
-            render();
-            gate.hidden = true;
-            app.hidden = false;
-            if (moveFocus) document.querySelector('#app-heading').focus();
+        function savedSelection() {
+            if (pageSelection !== undefined) return pageSelection;
+            try {
+                return localStorage.getItem(key);
+            } catch {
+                return null;
+            }
         }
 
-        accept.addEventListener('click', () => {
-            try {
-                sessionStorage.setItem(key, 'yes');
-            } catch {
-                status.textContent = 'Enable browser session storage to continue.';
+        function showSelection(selection, moveFocus = false) {
+            if (selection === 'yes') {
+                render();
+                gate.hidden = true;
+                app.hidden = false;
+                if (moveFocus) document.querySelector('#app-heading').focus();
                 return;
             }
-            showApp(true);
-        });
 
-        decline.addEventListener('click', () => {
-            status.textContent = 'You must be 18 or older to use this checklist.';
-            status.tabIndex = -1;
-            status.focus();
-            accept.hidden = true;
-            decline.hidden = true;
-        });
+            const declined = selection === 'no';
+            app.hidden = true;
+            gate.hidden = false;
+            accept.parentElement.hidden = declined;
+            gate.querySelector('.age-gate-intro').hidden = declined;
+            status.textContent = declined ? 'You must be 18 or older to use MyList.' : '';
+            if (moveFocus && declined) status.focus();
+        }
 
+        function choose(selection) {
+            try {
+                localStorage.setItem(key, selection);
+            } catch {
+                pageSelection = selection;
+                note.textContent = 'Your browser could not save this choice for future visits.';
+            }
+            showSelection(selection, true);
+        }
+
+        accept.addEventListener('click', () => choose('yes'));
+        decline.addEventListener('click', () => choose('no'));
         status.textContent = '';
+        status.tabIndex = -1;
         accept.disabled = false;
         decline.disabled = false;
 
-        window.addEventListener('pageshow', () => {
-            let confirmed = false;
-            try {
-                confirmed = sessionStorage.getItem(key) === 'yes';
-            } catch {
-                status.textContent = 'Enable browser session storage to continue.';
-            }
-            if (confirmed) showApp(false);
-            else {
-                gate.hidden = false;
-                app.hidden = true;
+        window.addEventListener('pageshow', () => showSelection(savedSelection()));
+        window.addEventListener('storage', event => {
+            if ((event.key === key || event.key === null) && event.storageArea === localStorage) {
+                pageSelection = undefined;
+                showSelection(savedSelection());
             }
         });
+
+        return function clearAgeSelection() {
+            localStorage.removeItem(key);
+            pageSelection = undefined;
+            showSelection(null);
+        };
     }
 
     Object.assign(DBList, { mountAdultPage });

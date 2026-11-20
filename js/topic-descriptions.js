@@ -12,7 +12,7 @@ DBList.topicDescriptions = {
     "rating-pet": "A pet takes the animal-inspired role in adult roleplay. Some people enjoy the playfulness or attention, while others like the structure of an agreed handler-and-pet dynamic.",
     "rating-slave": "Some consenting adults use this title for a submissive role that involves a broad, negotiated exchange of authority. The scope depends on the people involved, and consent can be withdrawn.",
     "rating-ropebunny": "A rope bunny enjoys being tied in rope bondage. The appeal can be sensation, restraint, or taking part in a visual rope design.",
-    "rating-little": "In this checklist, a little is a younger-feeling character or headspace explored in adult roleplay. DDLG refers to a caregiver-and-little dynamic between consenting adults.",
+    "rating-little": "In MyList, a little is a younger-feeling character or headspace explored in adult roleplay. DDLG refers to a caregiver-and-little dynamic between consenting adults.",
     "rating-brat": "A brat enjoys playful teasing or resistance within a consensual dynamic. What counts as welcome pushback is something both people agree on.",
     "rating-learner": "A learner enjoys being guided by a partner while exploring an interest. The focus is on learning and feedback, with each person free to set their pace.",
     "rating-teacher": "A teacher enjoys explaining or guiding a partner who wants to learn. The role can feel instructional, encouraging, or playful depending on the dynamic.",
@@ -50,7 +50,7 @@ DBList.topicDescriptions = {
     "cuddling-r": "Cuddling is affectionate closeness such as holding or being held. The pair distinguishes when your partner cuddles you from when you cuddle your partner.",
     "kissing-r": "Kissing can express affection or sexual interest. The two ratings distinguish receiving the kiss from initiating it.",
     "affection-g": "Affection covers expressions of warmth or care, such as kind words or touch. People may differ in which gestures they like giving and receiving.",
-    "massage-g": "Massage means using touch and pressure for relaxation or sensation. The checklist asks about receiving and giving it separately.",
+    "massage-g": "Massage means using touch and pressure for relaxation or sensation. MyList asks about receiving and giving it separately.",
     "masturbation-g": "This item means one partner stimulating the other by hand. The two ratings distinguish whose body is being stimulated.",
     "oral-g": "Oral sex means sexual stimulation using the mouth. The two ratings distinguish giving it from receiving it.",
     "peggingpiv-g": "This refers to vaginal penetration with a strap-on. The two ratings show whether you prefer receiving it or doing it with a partner.",
@@ -103,3 +103,67 @@ DBList.topicDescriptions = {
     "shared-medium-protocol": "Medium protocol uses some agreed routines or rules while leaving room for flexibility. The balance depends on the relationship.",
     "shared-low-protocol": "Low protocol uses few formal rules or rituals. Roles can still be important and expressed in a more informal way.",
 };
+
+const advancedTopicDefinitions = {
+    'adv-detail-as-hard-dominant-self': 'A dominant style that emphasizes clear rules, firm direction, and accountability within agreed limits.',
+    'adv-detail-as-tradwife-homemaker-self': 'A homemaker role centered on household care and domestic responsibilities within the relationship.',
+    'adv-detail-pet-play-lead': 'Adult roleplay where someone takes on animal-like mannerisms or a pet role.',
+    'adv-detail-pup-play-lead': 'Adult pet roleplay built around a dog or puppy persona.',
+    'adv-detail-pony-play-lead': 'Adult pet roleplay built around a horse or pony persona.',
+    'adv-detail-spooning-receive': 'Cuddling while both people lie on their sides facing the same direction.',
+    'adv-detail-rimming-receive': 'Oral contact with the area around the anus.',
+    'adv-detail-cunnilingus-receive': 'Oral stimulation of the vulva.',
+    'adv-detail-barebacking': 'Rate how you feel about having vaginal or anal sex with a partner without using a condom.',
+    'adv-detail-thighjob-self': 'Stimulation of the penis between a partner’s thighs.',
+    'adv-detail-docking-self': 'Intimate contact where one person’s foreskin covers part of another person’s penis.',
+    'adv-detail-clit-stimulation-self': 'Touch or pressure directed at the clitoris.',
+    'adv-detail-tribadism-scissoring-self': 'Vulva-to-vulva contact or rubbing.',
+    'adv-detail-pussy-play-worship-self': 'Giving focused attention to a partner’s vulva as an expression of admiration.',
+    'adv-detail-ass-play-worship-receive': 'Giving focused attention to a partner’s buttocks as an expression of admiration.',
+    'adv-detail-missionary': 'A face-to-face position with one partner lying on their back and the other above.',
+    'adv-detail-cowgirl': 'A position where one partner sits astride the other and faces them.',
+    'adv-detail-reverse-cowgirl': 'A position where one partner sits astride the other while facing away.',
+    'adv-detail-mating-press': 'A face-to-face position with one partner lying on their back and their knees drawn toward their chest.',
+    'adv-detail-prone-bone': 'A position where the receiving partner lies face down.',
+    'adv-detail-sex-swing': 'A suspended seat or sling that supports a partner during intimacy.',
+    'adv-detail-choker-self': 'A necklace designed to sit close around the neck.',
+    'adv-detail-garterbelt-self': 'A belt with straps that hold up stockings.',
+    'adv-detail-ball-gag-self': 'A mouth gag with a ball-shaped piece.',
+    'adv-detail-ring-gag-self': 'A mouth gag with an open ring.',
+    'adv-detail-bit-gag-self': 'A mouth gag with a bar-shaped piece.',
+    'adv-detail-spread-bars-self': 'A bar that holds attached limbs apart.',
+    'adv-detail-monoglove-armbinder-self': 'A restraint that encloses both arms in one sleeve.',
+    'adv-detail-sybians-self': 'A powered vibrating device designed to sit astride.',
+    'adv-detail-sensory-deprivation-receive': 'Reducing sensory input, such as sight or sound, as part of a scene.',
+    'adv-detail-human-furniture-lead': 'Roleplay where a person takes on the symbolic role of a piece of furniture.',
+    'adv-detail-queefing': 'Air leaving the vagina and making a sound.',
+    'adv-detail-marking-receive': 'Using a bodily fluid as a symbolic mark in an agreed scene.',
+    'adv-detail-bukkake-receive': 'A group scenario where semen from several participants is placed on one person.',
+    'adv-detail-creampie-receive': 'This term refers to ejaculation inside the vagina.',
+    'adv-detail-anal-creampie-receive': 'This term refers to ejaculation inside the rectum.',
+    'adv-detail-eroge': 'Adult story-based games commonly presented as visual novels.',
+    'adv-detail-futanari-futa': 'Adult fiction featuring characters drawn with a combination of sexual anatomy.',
+    'adv-detail-scalies': 'Fiction with anthropomorphic reptile or dragon characters.',
+    'adv-detail-macrophilia': 'A fantasy involving giant characters or a dramatic difference in size.',
+    'adv-detail-microphilia': 'A fantasy involving miniature characters or a dramatic difference in size.',
+    'adv-detail-oviposition': 'A fictional scenario involving egg laying or egg implantation.',
+    'adv-detail-as-cuckold-cuckquean': 'A role in consensual partner-sharing where one’s partner has an encounter with another person.',
+    'adv-detail-as-hotwife-hothusband': 'The partnered person who has an encounter with someone else in a consensual partner-sharing arrangement.',
+    'adv-detail-as-bull-cuckcake': 'The invited third person in a consensual partner-sharing arrangement.',
+    'adv-gentle-dom-self': 'A dominant role that emphasizes nurturing guidance and a softer style of leadership.',
+    'adv-service-sub-self': 'A submissive role that centers on agreed acts of service.',
+    'adv-switch-scene': 'Changing roles partway through the same scene by agreement.',
+    'adv-revisit-agreements': 'Making time to review and update what you and a partner have agreed to.',
+    'adv-aftercare-space': 'Taking time apart after a scene to rest or process the experience.',
+};
+
+for (const category of DBList.categories.filter(category => category.advanced)) {
+    for (const topic of category.topics) {
+        const [firstChoice] = topic.choices;
+        const prompts = topic.choices.map(choice => choice.prompt.replace(/[.!?]$/, '')).join(' / ');
+        const scope = topic.fantasy ? 'Rate this as fiction or fantasy.' :
+            topic.choices.length > 1 ? 'Rate each direction separately.' : '';
+        DBList.topicDescriptions[firstChoice.id] ??=
+            [advancedTopicDefinitions[firstChoice.id] ?? prompts + '.', scope].filter(Boolean).join(' ');
+    }
+}

@@ -6,13 +6,20 @@ DBList.groups = [
     { id: "relationship", title: "Relationship preferences", description: "Relationship styles and routines I’d consider. Each option is rated separately." },
 ];
 
-// Choices use [saved rating ID, checklist prompt, short PNG label, optional previous IDs, optional merged IDs].
+// Choices use [saved rating ID, prompt, short label, previous IDs, merged IDs, question requirements].
 function topic(title, ...ratings) {
-    const choices = ratings.map(([id, prompt, short, previousIds, mergedIds]) => ({
-        id, prompt, short, previousIds, mergedIds,
+    const choices = ratings.map(([id, prompt, short, previousIds, mergedIds, requirements]) => ({
+        id, prompt, short, previousIds, mergedIds, requirements,
     }));
     return { title, choices };
 }
+
+function fantasyTopic(title, ...ratings) {
+    return { ...topic(title, ...ratings), fantasy: true };
+}
+
+const selfStrapOnRequirements = { exclude: { selfGender: "male" } };
+const partnerStrapOnRequirements = { exclude: { partnerGender: "male" } };
 
 DBList.categories = [
     {
@@ -33,7 +40,7 @@ DBList.categories = [
             topic("Rigger", ["rating-rigger", "Taking the lead in rope bondage"]),
             topic("Rope Bunny", ["rating-ropebunny", "Being tied in rope bondage"]),
             topic("Caregiver", ["rating-caregiver", "Taking the caregiver role"]),
-            topic("Little / DDLG", ["rating-little", "Taking the little role in adult roleplay"]),
+            fantasyTopic("Little / DDLG", ["rating-little", "Taking the little role in adult roleplay"]),
             topic("Brat Tamer", ["rating-brattamer", "Taking the lead with a bratty partner"]),
             topic("Brat", ["rating-brat", "Taking the brat role"]),
             topic("Teacher", ["rating-teacher", "Teaching a partner"]),
@@ -103,8 +110,8 @@ DBList.categories = [
         sectionTitle: "Clothing / Gear",
         topics: [
             topic("Feminization",
-                ["feminization-r", "I take on a feminine presentation", "Me"],
-                ["feminization-g", "My partner takes on a feminine presentation", "Partner"]),
+                ["feminization-r", "I take on a feminine presentation", "Me", undefined, undefined, { exclude: { selfGender: "female" } }],
+                ["feminization-g", "My partner takes on a feminine presentation", "Partner", undefined, undefined, { exclude: { partnerGender: "female" } }]),
             topic("Collar",
                 ["collar-r", "I wear a collar", "I wear"],
                 ["collar-g", "My partner wears a collar", "Partner wears"]),
@@ -130,8 +137,8 @@ DBList.categories = [
                 ["harnesses-r", "I wear a harness", "I wear"],
                 ["harnesses-g", "My partner wears a harness", "Partner wears"]),
             topic("Strap-on",
-                ["strapon-r", "I wear a strap-on", "I wear"],
-                ["strapon-g", "My partner wears a strap-on", "Partner wears"]),
+                ["strapon-r", "I wear a strap-on", "I wear", undefined, undefined, selfStrapOnRequirements],
+                ["strapon-g", "My partner wears a strap-on", "Partner wears", undefined, undefined, partnerStrapOnRequirements]),
             topic("Pet Ears",
                 ["petears-r", "I wear pet ears", "I wear"],
                 ["petears-g", "My partner wears pet ears", "Partner wears"]),
@@ -169,15 +176,16 @@ DBList.categories = [
             topic("Masturbation",
                 ["masturbation-g", "My partner stimulates me by hand", "Receive"],
                 ["masturbation-r", "I stimulate my partner by hand", "Give"]),
-            topic("Oral Sex",
+            topic("Oral (Mouth)",
                 ["oral-g", "My partner performs oral sex on me", "Receive"],
                 ["oral-r", "I perform oral sex on my partner", "Give"]),
             topic("Vaginal Strap-on Play",
-                ["peggingpiv-g", "My partner penetrates me vaginally with a strap-on", "Receive"],
-                ["peggingpiv-r", "I penetrate my partner vaginally with a strap-on", "Give"]),
-            topic("Anal Strap-on Play",
-                ["peggingpia-g", "My partner penetrates me anally with a strap-on", "Receive"],
-                ["peggingpia-r", "I penetrate my partner anally with a strap-on", "Give"]),
+                ["peggingpiv-g", "My partner penetrates me vaginally with a strap-on", "Receive", undefined, undefined, {
+                    selfAnatomy: "vulva", exclude: { ...partnerStrapOnRequirements.exclude, selfGender: "male" },
+                }],
+                ["peggingpiv-r", "I penetrate my partner vaginally with a strap-on", "Give", undefined, undefined, {
+                    ...selfStrapOnRequirements, partnerAnatomy: "vulva",
+                }]),
             topic("Teasing",
                 ["teasing-g", "My partner teases me", "Receive"],
                 ["teasing-r", "I tease my partner", "Give"]),
@@ -188,8 +196,11 @@ DBList.categories = [
                 ["feet-r", "My feet are the focus", "My feet"],
                 ["feet-g", "My partner’s feet are the focus", "Partner’s feet"]),
             topic("Impregnation",
-                ["impregnation-r", "I am the one who could become pregnant", "I could get pregnant"],
-                ["impregnation-g", "My partner is the one who could become pregnant", "Partner could get pregnant"]),
+                ["impregnation-r", "I am the one who could become pregnant", "I could get pregnant", undefined, undefined, { exclude: { selfGender: "male" } }],
+                ["impregnation-g", "My partner is the one who could become pregnant", "Partner could get pregnant", undefined, undefined, { exclude: { partnerGender: "male" } }]),
+            topic("Anal Strap-on Play",
+                ["peggingpia-g", "My partner penetrates me anally with a strap-on", "Receive", undefined, undefined, partnerStrapOnRequirements],
+                ["peggingpia-r", "I penetrate my partner anally with a strap-on", "Give", undefined, undefined, selfStrapOnRequirements]),
         ],
     },
     {
@@ -200,7 +211,7 @@ DBList.categories = [
             topic("Exhibitionism",
                 ["exhibitionism-r", "I am the one being watched", "I’m watched"],
                 ["exhibitionism-g", "My partner is the one being watched", "Partner is watched"]),
-            topic("Age Play",
+            fantasyTopic("Age Play",
                 ["ageplay-r", "I take on an age-play role", "Me"],
                 ["ageplay-g", "My partner takes on an age-play role", "Partner"]),
             topic("Humiliation",
@@ -215,10 +226,10 @@ DBList.categories = [
             topic("Webcam Sex",
                 ["webcamsex-r", "My partner performs for me on a webcam", "Watch"],
                 ["webcamsex-g", "I perform for my partner on a webcam", "Perform"]),
-            topic("Fantasy-Setting Roleplay",
+            fantasyTopic("Fantasy-Setting Roleplay",
                 ["fantasyrp-r", "My partner initiates fantasy-setting roleplay", "Partner starts"],
                 ["fantasyrp-g", "I initiate fantasy-setting roleplay", "I start"]),
-            topic("Written Roleplay",
+            fantasyTopic("Written Roleplay",
                 ["roleplay-r", "I receive written roleplay from my partner", "Read"],
                 ["roleplay-g", "I send written roleplay to my partner", "Write"]),
             topic("Intimate Photos",
@@ -233,7 +244,7 @@ DBList.categories = [
             topic("Orgasm Control",
                 ["orgasmcontrol-g", "My partner controls when I orgasm", "Partner controls mine"],
                 ["orgasmcontrol-r", "I control when my partner orgasms", "I control theirs"]),
-            topic("Consensual Non-consent",
+            fantasyTopic("Consensual Non-consent",
                 ["cnc-r", "I take the initiating role in consensual non-consent roleplay", "I initiate"],
                 ["cnc-g", "My partner takes the initiating role in consensual non-consent roleplay", "Partner initiates"]),
         ],
