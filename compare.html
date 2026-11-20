@@ -20,6 +20,7 @@
     <script defer src="js/rating-icons.js"></script>
     <script defer src="js/age-gate.js"></script>
     <script defer src="js/compatibility.js"></script>
+    <script defer src="js/comparison-evidence.js"></script>
     <script defer src="js/compare-import.js"></script>
     <script defer src="js/compare-page.js"></script>
 </head>
@@ -115,52 +116,72 @@
                     <h2 id="comparison-heading" tabindex="-1">Compatibility overview</h2>
                     <p id="compare-answer-counts" class="note compare-answer-counts"></p>
                     <div class="compare-strictness" id="compare-strictness-control" data-mode="standard">
-                        <label for="compare-strictness">Strictness</label>
+                        <label for="compare-strictness">Interest level</label>
                         <input type="range" id="compare-strictness" min="0" max="2" step="1" value="1"
                             aria-valuetext="Standard" aria-describedby="compare-mode-note">
                         <div class="compare-mode-labels" aria-hidden="true">
-                            <span data-level="strict">Strict</span>
+                            <span data-level="strict">Strong interest</span>
                             <span data-level="standard">Standard</span>
-                            <span data-level="relaxed">Relaxed</span>
+                            <span data-level="relaxed">Exploratory</span>
                         </div>
                     </div>
                     <p id="compare-mode-note" class="note compare-mode-note"></p>
                     <div class="compare-scores">
                         <div class="compare-score" data-score="match">
-                            <h3>Compatibility</h3>
-                            <p class="compare-percentage" id="compare-match-score">—</p>
+                            <h3>Meet interest level</h3>
+                            <p class="compare-score-value" id="compare-match-score">—</p>
                             <p class="note" id="compare-match-count"></p>
                         </div>
-                        <div class="compare-donut" id="compare-donut" aria-hidden="true">
-                            <div class="compare-donut-center">
-                                <strong id="compare-chart-total">0</strong>
-                                <span>Pairs scored</span>
-                            </div>
+                        <div class="compare-score" data-score="open">
+                            <h3>Other open pairs</h3>
+                            <p class="compare-score-value" id="compare-open-score">—</p>
+                            <p class="note" id="compare-open-count"></p>
                         </div>
                         <div class="compare-score" data-score="conflict">
-                            <h3>Incompatibility</h3>
-                            <p class="compare-percentage" id="compare-conflict-score">—</p>
+                            <h3>Conflicts</h3>
+                            <p class="compare-score-value" id="compare-conflict-score">—</p>
                             <p class="note" id="compare-conflict-count"></p>
                         </div>
                     </div>
                     <p id="compare-coverage" class="note compare-coverage" role="status" aria-atomic="true"></p>
                     <section class="compare-category-overview" aria-labelledby="compare-category-heading">
-                        <h3 id="compare-category-heading">Compatibility by category</h3>
+                        <h3 id="compare-category-heading">Results by category</h3>
                         <ul class="compare-category-legend" aria-label="Marker legend">
-                            <li data-result="match">Compatible</li>
-                            <li data-result="difference">Different</li>
+                            <li data-result="match">Mutual interest</li>
+                            <li data-result="tentative">Tentative match</li>
+                            <li data-result="outside">Outside interest level</li>
+                            <li data-result="difference">One person would skip</li>
                             <li data-result="limit">Limit conflict</li>
-                            <li data-result="unscored">Unscored</li>
+                            <li data-result="boundary">Shared boundary</li>
+                            <li data-result="declined">Declined with a blank counterpart</li>
+                            <li data-result="review">Needs review</li>
                         </ul>
                         <ul id="compare-category-grid" class="compare-category-grid"></ul>
                     </section>
                     <details class="compare-method">
                         <summary>How the ratings work</summary>
-                        <p>Each activity direction pairs the corresponding roles, such as giving with receiving. Shared options use the same prompt for both people.</p>
-                        <p>Both percentages use the pairs scored in the selected mode. Relaxed counts two yes answers or two no answers as compatible. Strict and Standard leave shared boundaries outside the scores.</p>
-                        <p>Blank ratings and preferences that need more context appear below the scores.</p>
+                        <p>Each activity direction pairs corresponding roles, such as giving with receiving. The comparison uses supplied genders as checklist defaults for anatomy and fluid roles. If a saved rating falls outside those defaults, check which role applies.</p>
+                        <p>The one-partner result pairs each person’s rating for the other person’s gender. It checks mutual openness at every interest level. Specific multi-partner scenarios need a shared description of who would participate.</p>
+                        <p>Pairs involving Let’s talk about it are tentative. The interest level changes which open pairs are highlighted. Declines, limits, and blank answers keep their meaning at every level.</p>
                         <p>A hard limit remains a boundary at every setting. Agree on consent together before trying anything.</p>
                     </details>
+                </div>
+                <section id="compare-pairing" class="panel compare-pairing" aria-labelledby="compare-pairing-heading" hidden>
+                    <h3 id="compare-pairing-heading">Relationship pairing</h3>
+                    <div id="compare-pairing-table"></div>
+                </section>
+                <section id="compare-evidence" class="panel compare-evidence" aria-labelledby="compare-evidence-heading" hidden>
+                    <h3 id="compare-evidence-heading">Related evidence</h3>
+                    <p class="note">Each column shows what the other person’s answers or shared profile reveal about that person’s preference. These clues stay outside the comparison counts.</p>
+                    <div id="compare-evidence-table"></div>
+                </section>
+                <div class="compare-detail-controls">
+                    <label for="compare-details-view">View details</label>
+                    <select id="compare-details-view" aria-controls="compare-details">
+                        <option value="topic">By topic</option>
+                        <option value="result">By result</option>
+                        <option value="exact">Exact open ratings</option>
+                    </select>
                 </div>
                 <div id="compare-details"></div>
             </section>

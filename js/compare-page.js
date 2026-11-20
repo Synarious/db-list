@@ -26,33 +26,56 @@
     const strictness = document.querySelector('#compare-strictness');
     const strictnessControl = document.querySelector('#compare-strictness-control');
     const modeNote = document.querySelector('#compare-mode-note');
-    const donut = document.querySelector('#compare-donut');
-    const chartTotal = document.querySelector('#compare-chart-total');
     const coverage = document.querySelector('#compare-coverage');
     const categoryGrid = document.querySelector('#compare-category-grid');
+    const pairingSection = document.querySelector('#compare-pairing');
+    const pairingTable = document.querySelector('#compare-pairing-table');
+    const evidenceSection = document.querySelector('#compare-evidence');
+    const evidenceTable = document.querySelector('#compare-evidence-table');
+    const detailsView = document.querySelector('#compare-details-view');
     const details = document.querySelector('#compare-details');
     const matchScore = document.querySelector('#compare-match-score');
     const matchCount = document.querySelector('#compare-match-count');
+    const openScore = document.querySelector('#compare-open-score');
+    const openCount = document.querySelector('#compare-open-count');
     const conflictScore = document.querySelector('#compare-conflict-score');
     const conflictCount = document.querySelector('#compare-conflict-count');
     const modes = [
-        ['strict', 'Strict', 'Only identical ratings match.'],
-        ['standard', 'Standard', 'Ratings up to one step apart match. Hard limits are handled separately.'],
-        ['relaxed', 'Relaxed', 'Favorite, Like, Willing to try, and Let’s talk about it count as yes. Skip and Off the table count as no.'],
+        ['strict', 'Strong interest', 'Both people chose Favorite or Like.'],
+        ['standard', 'Standard', 'Both people chose Favorite, Like, or Willing to try.'],
+        ['relaxed', 'Exploratory', 'Also highlights tentative matches where at least one person chose Let’s talk about it and both are open.'],
     ];
     const groups = [
         ['limits', 'Potential limit conflicts', 'One person marked this off the table and the other showed interest or openness. Respect the stated limit.', true],
         ['unansweredLimits', 'Limits with an unanswered counterpart', 'One person set a limit. The corresponding answer is blank.', true],
         ['contextualLimits', 'Limits and dealbreakers to verify', 'These ratings depend on traits, roles, or circumstances. Check which ones apply to your situation.', true],
-        ['differences', 'Different preferences', 'The ratings differ under the selected strictness.'],
-        ['matches', 'Compatible ratings', 'The ratings align under the selected strictness.'],
+        ['differences', 'One person would skip', 'One person is open to this and the other would rather skip it.'],
+        ['matches', 'Mutual interest', 'Both chose Favorite, Like, or Willing to try.'],
+        ['tentativeMatches', 'Tentative matches', 'Both are open, and at least one person chose Let’s talk about it.'],
         ['boundaries', 'Shared boundaries', 'Both people would skip the option or have marked it off the table.'],
+        ['declinedWithoutCounterpart', 'Declines with a blank counterpart', 'One person would rather skip this. The other person left the corresponding rating blank.'],
         ['unanswered', 'Other unanswered pairs', 'Only one person rated this option or the corresponding role.'],
         ['partner', 'Partner preferences to check', 'These answers describe what each person looks for. Check which traits and dealbreakers apply to each other.'],
-        ['context', 'Scenarios to review', 'These options depend on the people and roles involved. Review the individual ratings together.'],
+        ['context', 'Scenarios to review', 'These options need details about the people or roles involved.'],
+        ['applicability', 'Roles to confirm', 'These saved ratings fall outside the checklist’s default body or fluid roles for this pairing. Confirm which roles apply.'],
     ];
+    const resultNames = {
+        limits: 'Limit conflict',
+        unansweredLimits: 'Limit · counterpart blank',
+        contextualLimits: 'Limit · check context',
+        differences: 'One person would skip',
+        matches: 'Mutual interest',
+        tentativeMatches: 'Tentative match',
+        boundaries: 'Shared boundary',
+        declinedWithoutCounterpart: 'Declined · counterpart blank',
+        unanswered: 'Counterpart blank',
+        partner: 'Check partner traits',
+        context: 'Check scenario',
+        applicability: 'Confirm roles',
+    };
+    const openDetailGroups = new Map();
     let imported;
-    let localAnswers;
+    let localChecklist;
     let localName;
     let currentHash = '';
     let hasMounted = false;
@@ -64,45 +87,108 @@
         return node;
     }
 
-    function answerCell(choice, rating, group, directional) {
+    function answerCell(choice, rating, group, showPrompt, usedInPairing) {
         const cell = element('td');
+        if (usedInPairing) {
+            cell.append(element('small', 'Shown under One partner each'));
+            return cell;
+        }
         const value = element('span', '', 'compare-rating');
         value.dataset.rating = rating;
         value.append(ratingIcon(rating, 15), element('span', ratingLabel(rating, group)));
         cell.append(value);
-        if (directional) cell.append(element('small', choice.short || choice.prompt));
+        if (showPrompt) cell.append(element('small', choice.short || choice.prompt));
         return cell;
     }
 
-    function renderRows([kind, title, description, open], rows, openStates, people) {
-        const section = element('details', '', 'panel compare-detail');
-        section.dataset.kind = kind;
-        section.open = openStates.get(kind) ?? Boolean(open);
-        const summary = element('summary');
-        summary.id = 'compare-group-' + kind;
-        const label = element('span', '', 'compare-group-label');
-        label.append(element('span', title), element('span', String(rows.length), 'compare-group-count'));
-        summary.append(label);
+    function groupBy(items, getKey) {
+        const grouped = new Map();
+        for (const item of items) {
+            const key = getKey(item);
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key).push(item);
+        }
+        return grouped;
+    }
 
+    function renderTable(rows, people, labelId, showCategory = false) {
         const table = element('table', '', 'compare-table');
-        table.setAttribute('aria-labelledby', summary.id);
+        table.setAttribute('aria-labelledby', labelId);
         const header = table.createTHead().insertRow();
-        for (const columnTitle of ['Topic', ...people]) {
+        for (const columnTitle of [...people, 'Result']) {
             const column = element('th', columnTitle);
             column.scope = 'col';
             header.append(column);
         }
-        const body = table.createTBody();
-        for (const row of rows) {
-            const topic = element('th', row.title);
-            topic.scope = 'row';
-            topic.append(element('small', row.category + (row.fantasy ? ' · Fantasy' : '')));
-            const directional = row.own.id !== row.other.id;
-            body.insertRow().append(topic,
-                answerCell(row.own, row.ownRating, row.group, directional),
-                answerCell(row.other, row.otherRating, row.group, directional));
+        for (const topicRows of groupBy(rows, row => row.topicId).values()) {
+            const [first] = topicRows;
+            const body = table.createTBody();
+            const topic = element('th', first.title, 'compare-topic-heading');
+            topic.scope = 'rowgroup';
+            topic.colSpan = 3;
+            const context = [showCategory && first.category, first.fantasy && 'Fantasy'].filter(Boolean).join(' · ');
+            if (context) topic.append(element('small', context));
+            body.insertRow().append(topic);
+            for (const row of topicRows) {
+                const showPrompt = row.own.id !== row.other.id || row.topicId === 'one-partner-each' || row.preferenceSide;
+                const result = element('td', resultNames[row.result], 'compare-pair-result');
+                result.dataset.result = row.result;
+                if (row.eligible === false && row.topicId !== 'one-partner-each' &&
+                    (row.result === 'matches' || row.result === 'tentativeMatches')) {
+                    result.append(element('small', 'Outside interest level'));
+                }
+                body.insertRow().append(
+                    answerCell(row.own, row.ownRating, row.preferenceSide === 'other' ? 'self' : row.group, showPrompt, row.ownUsed),
+                    answerCell(row.other, row.otherRating, row.preferenceSide === 'own' ? 'self' : row.group, showPrompt, row.otherUsed),
+                    result,
+                );
+            }
         }
-        section.append(summary, element('p', description, 'note'), table);
+        return table;
+    }
+
+    function renderEvidence(evidence, people) {
+        evidenceSection.hidden = !evidence.length;
+        evidenceTable.replaceChildren();
+        if (!evidence.length) return;
+
+        const table = element('table', '', 'compare-table compare-evidence-table');
+        table.setAttribute('aria-labelledby', 'compare-evidence-heading');
+        const header = table.createTHead().insertRow();
+        for (const title of ['Preference', ...people]) {
+            const column = element('th', title);
+            column.scope = 'col';
+            header.append(column);
+        }
+        const body = table.createTBody();
+        for (const { title, own, other } of evidence) {
+            const heading = element('th', title);
+            heading.scope = 'row';
+            const row = body.insertRow();
+            row.append(heading);
+            for (const item of [own, other]) {
+                const cell = element('td', item?.text ?? '—');
+                if (item?.source) cell.append(element('small', item.source));
+                row.append(cell);
+            }
+        }
+        evidenceTable.append(table);
+    }
+
+    function renderDetailGroup(key, title, description, rows, people, byResult, open = false) {
+        const section = element('details', '', 'panel compare-detail');
+        section.dataset.kind = key;
+        section.open = openDetailGroups.get(key) ?? open;
+        const summary = element('summary');
+        summary.id = 'compare-group-' + key;
+        const label = element('span', '', 'compare-group-label');
+        const count = byResult ? rows.length : new Set(rows.map(row => row.topicId)).size;
+        const noun = byResult ? 'pair' : 'topic';
+        label.append(element('span', title), element('span', countText(count, noun), 'compare-group-count'));
+        summary.append(label);
+        section.append(summary);
+        if (description) section.append(element('p', description, 'note'));
+        section.append(renderTable(rows, people, summary.id, byResult));
         return section;
     }
 
@@ -110,16 +196,17 @@
         return count + ' ' + (count === 1 ? singular : plural);
     }
 
-    function renderCategoryGrid(rows, mode) {
-        const unscored = [
-            ...(mode === 'relaxed' ? [] : rows.boundaries),
-            ...rows.unanswered, ...rows.unansweredLimits, ...rows.contextualLimits, ...rows.partner, ...rows.context,
-        ];
+    function renderCategoryGrid(rows, review) {
+        const open = [...rows.matches, ...rows.tentativeMatches];
         const results = [
-            ['match', [...rows.matches, ...(mode === 'relaxed' ? rows.boundaries : [])], 'compatible'],
-            ['difference', rows.differences, 'different'],
+            ['match', rows.matches.filter(row => row.eligible), 'mutual interest'],
+            ['tentative', rows.tentativeMatches.filter(row => row.eligible), 'tentative matches'],
+            ['outside', open.filter(row => !row.eligible), 'open pairs outside interest level'],
+            ['difference', rows.differences, 'where one person would skip'],
             ['limit', rows.limits, 'limit conflicts'],
-            ['unscored', unscored, 'unscored'],
+            ['boundary', rows.boundaries, 'shared boundaries'],
+            ['declined', rows.declinedWithoutCounterpart, 'declines with blank counterparts'],
+            ['review', review, 'need review'],
         ];
         const categories = new Map(DBList.categories.map(({ id }) => [id, {}]));
         for (const [result, items] of results) {
@@ -160,10 +247,9 @@
             );
             return category;
         }));
-        return unscored.length;
     }
 
-    function readLocalAnswers() {
+    function readLocalChecklist() {
         editMyList.hidden = true;
         profileForm.hidden = true;
         localName = '';
@@ -175,7 +261,7 @@
                 editMyList.href = 'profiles.html';
                 editMyList.textContent = 'Open Profiles';
                 editMyList.hidden = false;
-                return {};
+                return { answers: {}, profile: {} };
             }
             const alternatives = profiles.filter(profile => profile.id !== (profileId ?? activeId));
             const previous = profileSelect.value;
@@ -185,8 +271,8 @@
             profileForm.hidden = !alternatives.length;
 
             localName = selected?.name ?? '';
-            const { answers } = selected ? readSavedChecklist(selected.id) : readChecklist();
-            const count = Object.keys(answers).length;
+            const checklist = selected ? readSavedChecklist(selected.id) : readChecklist();
+            const count = Object.keys(checklist.answers).length;
             editMyList.hidden = count > 0;
             if (selected) {
                 editMyList.href = 'profiles.html';
@@ -194,10 +280,10 @@
             }
             localStatus.textContent = count || selected ? (localName || 'MyList') + ' has ' + countText(count, 'saved rating') + '.' :
                 'Save ratings in MyList to compare with another person.';
-            return answers;
+            return checklist;
         } catch {
             localStatus.textContent = 'Could not load your saved answers. Check your browser storage settings.';
-            return {};
+            return { answers: {}, profile: {} };
         }
     }
 
@@ -205,7 +291,6 @@
         const exampleAnswers = imported?.ownAnswers;
         current.hidden = !imported;
         comparison.hidden = true;
-        details.replaceChildren();
         heading.textContent = exampleAnswers ? 'Example compatibility overview' : 'Compatibility overview';
         loaded.textContent = '';
         if (exampleAnswers) {
@@ -216,11 +301,16 @@
                 countText(Object.keys(imported.answers).length, 'rating') +
                 (imported.skipped ? ' · ' + countText(imported.skipped, 'unrecognized entry', 'unrecognized entries') + ' skipped' : '');
         }
-        const myListAnswers = readLocalAnswers();
-        localAnswers = exampleAnswers ?? myListAnswers;
-        if (!imported || !Object.keys(localAnswers).length) return;
+        const myList = readLocalChecklist();
+        localChecklist = exampleAnswers ? { answers: exampleAnswers, profile: {} } : myList;
+        if (!imported || !Object.keys(localChecklist.answers).length) {
+            pairingTable.replaceChildren();
+            evidenceTable.replaceChildren();
+            details.replaceChildren();
+            return;
+        }
 
-        const ownCount = Object.keys(localAnswers).length;
+        const ownCount = Object.keys(localChecklist.answers).length;
         const otherCount = Object.keys(imported.answers).length;
         answerCounts.textContent = exampleAnswers
             ? 'Sample data · ' + countText(ownCount, 'rating') + ' for Example A · ' +
@@ -237,32 +327,69 @@
         strictness.setAttribute('aria-valuetext', label);
         modeNote.textContent = explanation;
 
-        const { rows, matches, total } = compareChecklists(localAnswers, imported.answers, mode);
-        const matchPercent = total ? Math.round(100 * matches / total) : 0;
-        matchScore.textContent = total ? matchPercent + '%' : '—';
-        matchCount.textContent = countText(matches, 'compatible pair');
-        conflictScore.textContent = total ? (100 - matchPercent) + '%' : '—';
-        conflictCount.textContent = countText(rows.limits.length, 'limit conflict') + ' · ' +
-            countText(rows.differences.length, 'other difference');
-        chartTotal.textContent = total;
-        donut.dataset.empty = String(!total);
-        donut.style.setProperty('--match-angle', (total ? 360 * matches / total : 0) + 'deg');
-        const scoreSummary = total
-            ? countText(total, 'scored pair') + ' · ' + matchScore.textContent + ' compatible · ' + conflictScore.textContent + ' incompatible'
-            : 'No pairs to score in this mode';
-        const unscored = renderCategoryGrid(rows, mode);
-        coverage.textContent = scoreSummary + ' · ' + countText(unscored, 'unscored pair');
+        const { rows, details: detailRows, pairing, matches, conflicts, total, evidence } = compareChecklists(localChecklist.answers, imported.answers, mode, {
+            ownProfile: localChecklist.profile,
+            otherProfile: imported.profile,
+        });
+        const tentativeSelected = rows.tentativeMatches.filter(row => row.eligible).length;
+        const tentativeOther = rows.tentativeMatches.length - tentativeSelected;
+        const otherOpen = rows.matches.length + rows.tentativeMatches.length - matches;
+        matchScore.textContent = String(matches);
+        matchCount.textContent = [
+            matches > tentativeSelected && (matches - tentativeSelected) + ' with mutual interest',
+            tentativeSelected && countText(tentativeSelected, 'tentative match', 'tentative matches'),
+        ].filter(Boolean).join(' · ');
+        openScore.textContent = String(otherOpen);
+        openCount.textContent = [
+            otherOpen > tentativeOther && (otherOpen - tentativeOther) + ' with mutual interest',
+            tentativeOther && countText(tentativeOther, 'tentative match', 'tentative matches'),
+        ].filter(Boolean).join(' · ');
+        conflictScore.textContent = String(conflicts);
+        conflictCount.textContent = [
+            rows.limits.length && countText(rows.limits.length, 'limit conflict'),
+            rows.differences.length && rows.differences.length + ' where one would skip',
+        ].filter(Boolean).join(' · ');
+        const needsContext = [...rows.contextualLimits, ...rows.partner, ...rows.context, ...rows.applicability];
+        renderCategoryGrid(rows, [...rows.unanswered, ...rows.unansweredLimits, ...needsContext]);
+        coverage.textContent = [
+            countText(total, 'pair', 'pairs') + ' with interest or conflict',
+            rows.boundaries.length && countText(rows.boundaries.length, 'shared boundary', 'shared boundaries'),
+            rows.unanswered.length && countText(rows.unanswered.length, 'blank counterpart'),
+            rows.unansweredLimits.length && countText(rows.unansweredLimits.length, 'limit with a blank counterpart', 'limits with blank counterparts'),
+            rows.declinedWithoutCounterpart.length && countText(rows.declinedWithoutCounterpart.length, 'decline with a blank counterpart', 'declines with blank counterparts'),
+            needsContext.length && needsContext.length + ' to review',
+        ].filter(Boolean).join(' · ');
 
-        const openStates = new Map(Array.from(details.children, section => [section.dataset.kind, section.open]));
         const people = imported.ownAnswers ? ['Example A', 'Example B'] : [localName || 'You', imported.savedName ?? 'Other person'];
-        details.replaceChildren();
-        for (const group of groups) {
-            const items = rows[group[0]];
-            if (items.length) details.append(renderRows(group, items, openStates, people));
+        pairingSection.hidden = !pairing;
+        pairingTable.replaceChildren(...(pairing ? [renderTable([pairing], people, 'compare-pairing-heading')] : []));
+        renderEvidence(evidence, people);
+        for (const section of details.children) {
+            if (section.dataset.kind) openDetailGroups.set(section.dataset.kind, section.open);
+        }
+        const byResult = detailsView.value === 'result';
+        if (byResult) {
+            const resultGroups = groupBy(detailRows, row => row.result);
+            details.replaceChildren(...groups.flatMap(([key, title, description, open]) => resultGroups.has(key) ?
+                [renderDetailGroup(key, title, description, resultGroups.get(key), people, true, open)] : []));
+        } else {
+            const visibleRows = detailsView.value === 'exact' ? detailRows.filter(row => row.exact) : detailRows;
+            if (detailsView.value === 'exact' && !visibleRows.length) {
+                const empty = element('p', 'No open pairs have identical ratings.', 'note');
+                empty.setAttribute('role', 'status');
+                details.replaceChildren(empty);
+                return;
+            }
+            const topicGroups = groupBy(visibleRows, row => row.categoryId);
+            details.replaceChildren(...Array.from(topicGroups, ([key, items]) =>
+                renderDetailGroup(key, items[0].category, '', items, people, false)));
         }
     }
 
     strictness.addEventListener('input', () => {
+        if (!comparison.hidden) renderComparison();
+    });
+    detailsView.addEventListener('change', () => {
         if (!comparison.hidden) renderComparison();
     });
 

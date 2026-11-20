@@ -24,6 +24,7 @@
         { exclude: { selfGender: "male" } },
     ];
     const partnerHasPenis = { partnerAnatomy: "penis" };
+    const selfHasPenis = { selfAnatomy: "penis" };
 
     function section(id, title, group, mode, entries, {
         fantasy = false, anatomy = {}, mutualAnatomy = {}, partnerGenders = {},
@@ -35,8 +36,16 @@
             const ratings = directions
                 ? directions.map(([suffix, short, prefix]) => [id + '-' + suffix, prefix + label, short])
                 : [[id, singlePrompts[mode] + label]];
+            if (wording.counterpart) ratings.push(wording.counterpart);
             const displayTitle = wording.title ?? label;
-            const entry = fictional ? fantasyTopic(displayTitle, ...ratings) : topic(displayTitle, ...ratings);
+            const makeTopic = directions || wording.counterpart ? counterpartTopic : topic;
+            const entry = makeTopic(displayTitle, ...ratings);
+            if (fictional) entry.fantasy = true;
+            if (wording.contextual) entry.contextual = true;
+            if (wording.ageRange) entry.ageRange = wording.ageRange;
+            wording.roleLabels?.forEach((short, index) => {
+                entry.choices[index].short = short;
+            });
             wording.choices?.forEach(([short, prompt], index) => {
                 const choice = entry.choices[index];
                 choice.legacyPrompt = choice.prompt;
@@ -235,20 +244,21 @@
         section("scene-language", "Degradation and scene language", "self", "dynamic", [
             ["spitting", "Spitting (Degradation)"],
             ["forced-nudity", "Negotiated Nudity Roleplay", true],
-            ["cock-play-worship", "Penis Worship"],
+            ["cock-play-worship", "Penis Worship", undefined, { roleLabels: ["I worship", "My partner worships"] }],
             ["name-calling", "Name calling"],
             ["objectification", "Objectification"],
             ["human-furniture", "Human Furniture"],
             ["public-humiliation", "Public Humiliation Roleplay", true],
             ["body-writing", "Body Writing"],
             ["competition", "Competitive Play"],
-        ], { choiceRequirements: { "cock-play-worship": [partnerHasPenis, partnerHasPenis] } }),
+        ], { choiceRequirements: { "cock-play-worship": [partnerHasPenis, selfHasPenis] } }),
         section("body-senses", "Body and sensory interests", "self", "shared", [
             ["shaving", "Shaving"],
             ["crotch-sniffing", "Intimate Scent"],
             ["ear-play", "Ear Play"],
             ["foreskin-worship", "Foreskin Worship", undefined, {
                 choices: [["My partner’s foreskin", "I worship my partner’s foreskin"]],
+                counterpart: ["adv-detail-foreskin-worship-receive", "My partner worships my foreskin", "My foreskin"],
             }],
             ["muscle-worship", "Muscle worship"],
             ["scent-musk", "Body Scent"],
@@ -258,17 +268,17 @@
             ["used-underwear", "Used Underwear"],
             ["oiled", "Body Oil"],
             ["breast-pumps", "Breast Pumps"],
-        ], { choiceRequirements: { "foreskin-worship": [partnerHasPenis] } }),
+        ], { choiceRequirements: { "foreskin-worship": [partnerHasPenis, selfHasPenis] } }),
         section("bodily-fluids", "Body-fluid preferences", "self", "receive", [
             ["saliva-spit", "Saliva / Spit"],
-            ["cum-play", "Semen-related Interests"],
+            ["cum-play", "Semen-related Interests", undefined, { roleLabels: ["Partner’s semen", "My semen"] }],
             ["watersports", "Urine-related Interests"],
             ["scat", "Feces-related Interests"],
-            ["lactation", "Lactation"],
+            ["lactation", "Lactation", undefined, { roleLabels: ["Partner lactates", "I lactate"] }],
             ["sweat", "Sweat"],
             ["marking", "Marking"],
             ["wetting", "Wetting"],
-            ["menses", "Menstrual Fluid"],
+            ["menses", "Menstrual Fluid", undefined, { roleLabels: ["Partner menstruates", "I menstruate"] }],
         ], {
             choiceRequirements: { "cum-play": semenSource, lactation: lactationOrMenstrualSource, menses: lactationOrMenstrualSource },
         }),
@@ -276,7 +286,7 @@
             ["cum-on-back-butt", "Semen on Back or Buttocks"],
             ["cum-on-stomach-genitals", "Semen on Abdomen or Genitals"],
             ["cum-on-breasts", "Semen on Chest"],
-            ["bukkake", "Bukkake"],
+            ["bukkake", "Bukkake", undefined, { contextual: true }],
             ["creampie", "Creampie"],
             ["anal-creampie", "Anal Creampie"],
             ["cum-swapping", "Semen Swapping"],
@@ -370,14 +380,14 @@
             ["body-covering-tattoos", "Body-covering Tattoos"],
         ], { anatomy: { "small-cocks": "penis", "large-cocks": "penis" } }),
         section("adult-ages", "Adult age ranges", "partner", "age", [
-            ["18-22", "18 - 22"],
-            ["22-26", "22 - 26"],
-            ["26-30", "26 - 30"],
-            ["30-35", "30 - 35"],
-            ["35-40", "35 - 40"],
-            ["40-50", "40 - 50"],
-            ["50-60", "50 - 60"],
-            ["60", "60 +"],
+            ["18-22", "18 - 22", undefined, { ageRange: [18, 22] }],
+            ["22-26", "22 - 26", undefined, { ageRange: [22, 26] }],
+            ["26-30", "26 - 30", undefined, { ageRange: [26, 30] }],
+            ["30-35", "30 - 35", undefined, { ageRange: [30, 35] }],
+            ["35-40", "35 - 40", undefined, { ageRange: [35, 40] }],
+            ["40-50", "40 - 50", undefined, { ageRange: [40, 50] }],
+            ["50-60", "50 - 60", undefined, { ageRange: [50, 60] }],
+            ["60", "60 +", undefined, { ageRange: [60, Infinity] }],
         ]),
         section("partner-fit", "Partner habits and traits", "partner", "partner", [
             ["tobacco-use", "Tobacco Use"],
