@@ -6,7 +6,7 @@
         visibleCategories: categories, navigationGroups, advancedMode, showFantasy, checklistQuery,
         ratingIcon, createRatingField, checklistRatingOptions, fillRatingKey, fantasyLabel, createImageSheet, layoutImageSheet,
         bindChecklistShareUrl, downloadFile, isAnswerStorageEvent, checklistShareHash, parseChecklistShareHash,
-        bindComparisonInput, comparisonBackupKey, supportsImageExport,
+        bindComparisonInput, comparisonBackupKey, bindPngExport, renderTiledPng,
     } = DBList;
 
     const summary = document.querySelector('#summary');
@@ -26,14 +26,6 @@
     const imageButton = document.querySelector('#download-image');
     const textButton = document.querySelector('#download-text');
     const excludeUnrated = document.querySelector('#exclude-unrated');
-    const mobileImageExportNote = document.querySelector('#mobile-image-export-note');
-    const imageExportSupported = supportsImageExport();
-    const desktopExportNote = mobileImageExportNote.textContent;
-    imageButton.hidden = !imageExportSupported;
-    excludeUnrated.closest('label').hidden = !imageExportSupported;
-    tools.querySelector('.results-tool-divider').hidden = !imageExportSupported;
-    mobileImageExportNote.hidden = imageExportSupported;
-    if (!imageExportSupported) shareOptions.querySelector('#copy-share-link').classList.replace('secondary', 'page-primary');
     const pageHeading = document.querySelector('#app-heading');
     const title = document.querySelector('#summary-heading');
     const profileList = document.querySelector('#results-profile');
@@ -80,7 +72,6 @@
     let text = '';
     let imageData;
     let viewOwnResults = false;
-    let exporting = false;
     let activeShareHash = '';
     let shared;
 
@@ -219,12 +210,6 @@
             const { rated, total } = checklistProgress(answers, context);
             const example = !shared && rated < minimumRatingsForOwnResults && !viewOwnResults;
             shareOptions.hidden = Boolean(shared || example);
-            if (!imageExportSupported) {
-                let instruction = 'Use Share URL (Copy) to share your results.';
-                if (shared) instruction = 'Copy the URL from your browser’s address bar to share these results.';
-                else if (example) instruction = 'Select View my results to share your own checklist by URL.';
-                mobileImageExportNote.textContent = desktopExportNote + ' ' + instruction;
-            }
             refreshShareUrl();
             openCompare.hidden = Boolean(shared || example || !rated);
             compareResults.hidden = !openCompare.hidden || Boolean(shared && !Object.keys(answers).length);
@@ -347,7 +332,6 @@
             }
         } catch {
             shareOptions.hidden = true;
-            mobileImageExportNote.textContent = desktopExportNote;
             refreshShareUrl();
             summary.replaceChildren();
             openCompare.hidden = true;
@@ -372,7 +356,7 @@
             if (target?.matches('.result-category')) target.open = true;
         }
         textButton.disabled = false;
-        imageButton.disabled = !imageExportSupported || exporting;
+        imageButton.disabled = false;
         status.textContent = '';
     }
 
@@ -447,38 +431,7 @@
         status.textContent = 'Text download requested.';
     });
 
-    async function renderImage(sheet, { width, height }, scale) {
-        const canvas = await window.html2canvas(sheet, {
-            scale,
-            width,
-            height,
-            windowWidth: width,
-            windowHeight: height,
-            scrollX: 0,
-            scrollY: 0,
-            onclone: (clonedDocument, clonedSheet) => {
-                clonedSheet.style.left = '0';
-                // The renderer loads each SVG as a standalone image without the page stylesheet.
-                for (const icon of clonedSheet.querySelectorAll('.rating-icon')) {
-                    icon.style.color = clonedDocument.defaultView.getComputedStyle(icon).color;
-                }
-            },
-        });
-        try {
-            const image = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            if (!image) throw new Error('Empty image');
-            return { image, width: canvas.width, height: canvas.height };
-        } finally {
-            canvas.width = 0;
-        }
-    }
-
-    imageButton.addEventListener('click', async () => {
-        if (!imageExportSupported) return;
-        exporting = true;
-        imageButton.disabled = true;
-        excludeUnrated.disabled = true;
-        status.textContent = 'Preparing image…';
+    bindPngExport(imageButton, async exportProgress => {
         const data = imageData;
         const ratedOnly = excludeUnrated.checked;
         let sheet;
@@ -504,25 +457,21 @@
                 maxImageExportHeight / size.height,
                 Math.sqrt(imagePixelBudget / (size.width * size.height))
             );
-            let png;
-            try {
-                png = await renderImage(sheet, size, scale);
-            } catch (error) {
-                if (scale <= 1) throw error;
-                png = await renderImage(sheet, size, 1);
-            }
-            const name = data.example ? 'mylist-example' : 'mylist';
-            downloadFile(png.image, name + '.png');
-            status.textContent = 'Image download requested (' + png.width + ' × ' + png.height + ' px).';
-        } catch {
-            status.textContent = 'The image could not be created. Try Download TXT.';
+            const blob = await renderTiledPng(sheet, {
+                ...size, scale, windowWidth: size.width, windowHeight: size.height, scrollX: 0, scrollY: 0,
+                onclone(clonedDocument, clonedSheet) {
+                    clonedSheet.style.left = '0';
+                    // The renderer loads each SVG without the page stylesheet.
+                    for (const icon of clonedSheet.querySelectorAll('.rating-icon')) {
+                        icon.style.color = clonedDocument.defaultView.getComputedStyle(icon).color;
+                    }
+                },
+            }, exportProgress);
+            return { blob, name: data.example ? 'mylist-example.png' : 'mylist.png' };
         } finally {
             sheet?.remove();
-            exporting = false;
-            excludeUnrated.disabled = false;
-            imageButton.disabled = !text;
         }
-    });
+    }, 'Could not create the PNG. You can still share the link or download the text.');
 
     const refreshShareUrl = bindChecklistShareUrl();
     const app = document.querySelector('#app');

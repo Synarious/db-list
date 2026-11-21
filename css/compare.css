@@ -174,8 +174,6 @@ dialog.compare-import#compare-dialog {
 }
 .compare-mode-options input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .compare-mode-note { margin: .55rem 0 0; font-size: .79rem; line-height: 1.4; }
-.compare-image-status { margin: 0; font-size: .83rem; }
-.compare-image-status:empty { display: none; }
 .compare-chart-help { margin: .65rem auto; text-align: center; font-size: .83rem; }
 
 .compare-chart-grid {

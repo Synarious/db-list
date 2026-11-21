@@ -25,6 +25,7 @@
     <script defer src="js/age-gate.js"></script>
     <script defer src="js/image-sheet.js"></script>
     <script defer src="js/image-layout.js"></script>
+    <script defer src="js/png-export.js"></script>
     <script defer src="js/compare-import.js"></script>
     <script defer src="js/results.js"></script>
 </head>
@@ -132,19 +133,18 @@
                 <div class="results-tool">
                     <button type="button" id="download-image" class="page-primary results-share-button" disabled hidden>
                         <span class="results-share-icon" aria-hidden="true"></span>
-                        Share Image (Download)
+                        Export PNG
                     </button>
                     <div class="actions results-tool-actions">
-                        <label class="image-topic-control" hidden>
+                        <label class="image-topic-control">
                             <input type="checkbox" id="exclude-unrated">
                             Only rated topics in PNG
                         </label>
-                        <p id="mobile-image-export-note" class="note" hidden>Image export is only supported on desktop.</p>
                         <button type="button" id="download-text" class="results-utility" disabled>Download TXT</button>
                     </div>
                     <p id="status" class="results-tool-status" role="status"></p>
                 </div>
-                <span class="results-tool-divider" hidden>or</span>
+                <span class="results-tool-divider">or</span>
                 <div id="share-url-options" class="results-tool" hidden>
                     <button type="button" id="copy-share-link" class="secondary results-share-button" aria-describedby="share-privacy" disabled>
                         <span class="results-share-icon" aria-hidden="true"></span>

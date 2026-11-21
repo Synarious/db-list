@@ -24,6 +24,7 @@
     <script defer src="js/compare-import.js"></script>
     <script defer src="js/html2canvas.min.js"></script>
     <script defer src="js/file-download.js"></script>
+    <script defer src="js/png-export.js"></script>
     <script defer src="js/compare-page.js"></script>
 </head>
 <body class="results-page compare-page">
@@ -145,9 +146,7 @@
                             </div>
                             <p id="compare-mode-note" class="note compare-mode-note" aria-live="polite"></p>
                         </fieldset>
-                        <button type="button" id="compare-download-image" class="secondary" disabled hidden>Download overview as PNG</button>
-                        <p id="compare-mobile-image-export-note" class="note compare-image-status" hidden>Image export is only supported on desktop. To share ratings, use Share URL (Copy) on the <a href="results.html" data-checklist-nav>Results page</a>.</p>
-                        <p id="compare-image-status" class="note compare-image-status" role="status"></p>
+                        <button type="button" id="compare-download-image" class="secondary" hidden>Export overview PNG</button>
                     </div>
                     <p class="note compare-chart-help">Select a slice or a legend row to see the ratings or pairs it contains.</p>
                     <div class="compare-chart-grid" id="compare-overview-image">

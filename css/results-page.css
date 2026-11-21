@@ -104,7 +104,6 @@
 .image-topic-control:is(:hover, :has(input:checked)) { color: var(--primary); }
 .image-topic-control input { flex: none; inline-size: 1rem; block-size: 1rem; margin: 0; accent-color: var(--accent); }
 .image-topic-control:has(input:disabled) { cursor: default; }
-#mobile-image-export-note { flex: 1 1 12rem; margin: 0; }
 #share-privacy { flex: 1 1 12rem; margin: 0; color: var(--checklist-muted); font-size: .825rem; }
 .results-tool #copy-share-link { margin: 0; }
 

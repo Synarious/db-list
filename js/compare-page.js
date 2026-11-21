@@ -4,7 +4,7 @@
     const {
         mountAdultPage, readChecklist, isAnswerStorageEvent, ratingOptions, ratingLabel, ratingIcon, compareChecklists,
         parseAnswerBackup, checklistShareHash, parseChecklistShareHash, createExampleComparison,
-        bindComparisonInput, comparisonBackupKey, getSavedProfiles, readSavedChecklist, downloadFile, supportsImageExport,
+        bindComparisonInput, comparisonBackupKey, getSavedProfiles, readSavedChecklist, bindPngExport, renderTiledPng,
     } = DBList;
     const app = document.querySelector('#app');
     const compareDialog = document.querySelector('#compare-dialog');
@@ -32,11 +32,6 @@
     const modeNote = document.querySelector('#compare-mode-note');
     const overviewImage = document.querySelector('#compare-overview-image');
     const imageButton = document.querySelector('#compare-download-image');
-    const imageStatus = document.querySelector('#compare-image-status');
-    const imageExportSupported = supportsImageExport();
-    imageButton.hidden = !imageExportSupported;
-    imageButton.disabled = !imageExportSupported;
-    document.querySelector('#compare-mobile-image-export-note').hidden = imageExportSupported;
     const pairChart = document.querySelector('#compare-pair-chart');
     const pairCount = document.querySelector('#compare-pair-count');
     const compatibility = document.querySelector('#compare-compatibility');
@@ -564,26 +559,12 @@
         }
     }
 
-    imageButton.addEventListener('click', async () => {
-        if (!imageExportSupported) return;
-        imageButton.disabled = true;
-        imageStatus.textContent = 'Preparing image…';
-        let canvas;
-        try {
-            canvas = await window.html2canvas(overviewImage, {
-                windowWidth: 1248, scrollX: 0, scrollY: 0, scale: 2, backgroundColor: null,
-                onclone: prepareOverviewImage,
-            });
-            const png = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            if (!png) throw new Error('Empty image');
-            downloadFile(png, 'mylist-compatibility.png');
-            imageStatus.textContent = 'PNG download requested.';
-        } catch {
-            imageStatus.textContent = 'The image could not be created. Try downloading it again.';
-        } finally {
-            if (canvas) canvas.width = 0;
-            imageButton.disabled = false;
-        }
+    bindPngExport(imageButton, async exportProgress => {
+        const blob = await renderTiledPng(overviewImage, {
+            windowWidth: 1248, scrollX: 0, scrollY: 0, scale: 2, backgroundColor: null,
+            onclone: prepareOverviewImage,
+        }, exportProgress);
+        return { blob, name: 'mylist-compatibility.png' };
     });
 
     function clearShareHash() {

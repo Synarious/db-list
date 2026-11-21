@@ -395,6 +395,9 @@ body:has(> .site-footer):has(#age-gate:not([hidden])) > main { min-block-size: a
     color: inherit;
 }
 :is(.checklist-page, .results-page, .profiles-page) dialog::backdrop { background: #000b; }
+.results-page .png-export::backdrop { backdrop-filter: blur(2px); }
+.png-export h2 { margin: 0; }
+.png-export progress { width: 100%; margin-bottom: .9rem; accent-color: var(--accent); }
 dialog:is(#instructions-dialog, #compare-dialog) {
     width: calc(100% - 2 * var(--page-gutter));
     max-width: var(--page-content-width);
