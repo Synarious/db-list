@@ -66,6 +66,10 @@
         return { ownAnswers, answers };
     }
 
+    function isWillingAgainstLimit(own, other) {
+        return (own === 'willing-to-try' && other === 'limit') || (own === 'limit' && other === 'willing-to-try');
+    }
+
     function compareRatings(own, other) {
         if (!own || !other) {
             const rating = own || other;
@@ -76,16 +80,16 @@
         const ownDeclines = declined.has(own);
         const otherDeclines = declined.has(other);
         if (ownDeclines && otherDeclines) return 'boundaries';
+        if (isWillingAgainstLimit(own, other)) return 'willingLimits';
         if (own === 'limit' || other === 'limit') return 'limits';
         if (ownDeclines || otherDeclines) return 'differences';
 
         return own === 'maybe' || other === 'maybe' ? 'tentativeMatches' : 'matches';
     }
 
-    function interestLevel(mode, result, own, other) {
+    function interestLevel(relaxed, result, own, other) {
         const mutualInterest = result === 'matches' || result === 'tentativeMatches';
-        const eligible = result === 'tentativeMatches' ? mode === 'relaxed' :
-            mutualInterest && (mode !== 'strict' || (strongRatings.has(own) && strongRatings.has(other)));
+        const eligible = result === 'matches' || (relaxed && result === 'tentativeMatches');
         return { eligible, exact: mutualInterest && own === other };
     }
 
@@ -103,7 +107,23 @@
         };
     }
 
-    function compareChecklists(ownAnswers, otherAnswers, mode = 'standard', { ownProfile = {}, otherProfile = {} } = {}) {
+    function groupBreakdownRows(rows) {
+        const breakdown = {
+            favorite: [], like: [], 'willing-to-try': [], maybe: rows.tentativeMatches,
+            'willing-limit': rows.willingLimits, limit: rows.limits,
+            'not-interested': rows.differences, boundary: rows.boundaries,
+        };
+        for (const row of rows.matches) {
+            const { ownRating, otherRating } = row;
+            const rating = ownRating === otherRating ? ownRating :
+                strongRatings.has(ownRating) && strongRatings.has(otherRating) ? 'like' : 'willing-to-try';
+            breakdown[rating].push(row);
+        }
+        return breakdown;
+    }
+
+    function compareChecklists(ownAnswers, otherAnswers, mode = 'relaxed', { ownProfile = {}, otherProfile = {} } = {}) {
+        const relaxed = mode !== 'standard';
         // Use each actual comparison partner's supplied gender for the checklist defaults.
         const ownContext = DBList.questionContext({ gender: ownProfile.gender, partnerGender: otherProfile.gender });
         const otherContext = DBList.questionContext({ gender: otherProfile.gender, partnerGender: ownProfile.gender });
@@ -111,14 +131,14 @@
         otherContext.selfAnatomy = ownContext.partnerAnatomy;
 
         const rows = {
-            limits: [], unansweredLimits: [], declinedWithoutCounterpart: [], contextualLimits: [],
+            limits: [], willingLimits: [], unansweredLimits: [], declinedWithoutCounterpart: [], contextualLimits: [],
             differences: [], matches: [], tentativeMatches: [],
             boundaries: [], unanswered: [], partner: [], context: [], applicability: [],
         };
         const details = [];
         const pairing = compareSinglePartner(ownAnswers, otherAnswers, ownProfile.gender, otherProfile.gender);
         if (pairing) {
-            Object.assign(pairing, interestLevel(mode, pairing.result, pairing.ownRating, pairing.otherRating));
+            Object.assign(pairing, interestLevel(relaxed, pairing.result, pairing.ownRating, pairing.otherRating));
             rows[pairing.result].push(pairing);
         }
         for (const pair of pairs) {
@@ -136,7 +156,7 @@
             kind ||= compareRatings(own, other);
             const row = {
                 ...pair, ownRating: own, otherRating: other, ownUsed, otherUsed, result: kind,
-                ...interestLevel(mode, kind, own, other),
+                ...interestLevel(relaxed, kind, own, other),
             };
             rows[kind].push(row);
             details.push(row);
@@ -144,9 +164,15 @@
         const mutualInterest = [...rows.matches, ...rows.tentativeMatches];
         const matches = mutualInterest.filter(row => row.eligible).length;
         const confirmedMatches = rows.matches.length;
-        const conflicts = rows.limits.length + rows.differences.length;
+        const countedWillingLimits = relaxed ? 0 : rows.willingLimits.length;
+        const conflicts = rows.limits.length + rows.differences.length + countedWillingLimits;
         const evidence = DBList.compareProfileEvidence(ownAnswers, otherAnswers, ownProfile, otherProfile);
-        return { rows, details, pairing, evidence, matches, confirmedMatches, conflicts, total: mutualInterest.length + conflicts };
+        const breakdownRows = groupBreakdownRows(rows);
+        const breakdown = Object.fromEntries(Object.entries(breakdownRows).map(([key, pairs]) => [key, pairs.length]));
+        return {
+            rows, details, pairing, evidence, matches, confirmedMatches, conflicts, breakdown, breakdownRows,
+            total: mutualInterest.length + conflicts,
+        };
     }
 
     Object.assign(DBList, { compareChecklists, createExampleComparison });

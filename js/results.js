@@ -6,7 +6,7 @@
         visibleCategories: categories, navigationGroups, advancedMode, showFantasy, checklistQuery,
         ratingIcon, createRatingField, checklistRatingOptions, fillRatingKey, fantasyLabel, createImageSheet, layoutImageSheet,
         bindChecklistShareUrl, downloadFile, isAnswerStorageEvent, checklistShareHash, parseChecklistShareHash,
-        bindComparisonInput, comparisonBackupKey,
+        bindComparisonInput, comparisonBackupKey, supportsImageExport,
     } = DBList;
 
     const summary = document.querySelector('#summary');
@@ -26,6 +26,14 @@
     const imageButton = document.querySelector('#download-image');
     const textButton = document.querySelector('#download-text');
     const excludeUnrated = document.querySelector('#exclude-unrated');
+    const mobileImageExportNote = document.querySelector('#mobile-image-export-note');
+    const imageExportSupported = supportsImageExport();
+    const desktopExportNote = mobileImageExportNote.textContent;
+    imageButton.hidden = !imageExportSupported;
+    excludeUnrated.closest('label').hidden = !imageExportSupported;
+    tools.querySelector('.results-tool-divider').hidden = !imageExportSupported;
+    mobileImageExportNote.hidden = imageExportSupported;
+    if (!imageExportSupported) shareOptions.querySelector('#copy-share-link').classList.replace('secondary', 'page-primary');
     const pageHeading = document.querySelector('#app-heading');
     const title = document.querySelector('#summary-heading');
     const profileList = document.querySelector('#results-profile');
@@ -211,6 +219,12 @@
             const { rated, total } = checklistProgress(answers, context);
             const example = !shared && rated < minimumRatingsForOwnResults && !viewOwnResults;
             shareOptions.hidden = Boolean(shared || example);
+            if (!imageExportSupported) {
+                let instruction = 'Use Share URL (Copy) to share your results.';
+                if (shared) instruction = 'Copy the URL from your browser’s address bar to share these results.';
+                else if (example) instruction = 'Select View my results to share your own checklist by URL.';
+                mobileImageExportNote.textContent = desktopExportNote + ' ' + instruction;
+            }
             refreshShareUrl();
             openCompare.hidden = Boolean(shared || example || !rated);
             compareResults.hidden = !openCompare.hidden || Boolean(shared && !Object.keys(answers).length);
@@ -333,6 +347,7 @@
             }
         } catch {
             shareOptions.hidden = true;
+            mobileImageExportNote.textContent = desktopExportNote;
             refreshShareUrl();
             summary.replaceChildren();
             openCompare.hidden = true;
@@ -357,7 +372,7 @@
             if (target?.matches('.result-category')) target.open = true;
         }
         textButton.disabled = false;
-        imageButton.disabled = exporting;
+        imageButton.disabled = !imageExportSupported || exporting;
         status.textContent = '';
     }
 
@@ -459,6 +474,7 @@
     }
 
     imageButton.addEventListener('click', async () => {
+        if (!imageExportSupported) return;
         exporting = true;
         imageButton.disabled = true;
         excludeUnrated.disabled = true;
@@ -499,7 +515,7 @@
             downloadFile(png.image, name + '.png');
             status.textContent = 'Image download requested (' + png.width + ' × ' + png.height + ' px).';
         } catch {
-            status.textContent = 'The image could not be created. You can download the text or use the screenshot guide.';
+            status.textContent = 'The image could not be created. Try Download TXT.';
         } finally {
             sheet?.remove();
             exporting = false;

@@ -16,7 +16,7 @@ function openChecklist(route = 'index.html', stored = new Map()) {
         URL, URLSearchParams, TextEncoder, TextDecoder, atob, btoa, crypto: webcrypto,
     });
     for (const script of ['catalog', 'advanced-expansion', 'advanced-catalog', 'image-themes', 'backup-v1', 'answers',
-        'share-links', 'comparison-evidence', 'compatibility']) {
+        'share-links', 'compare-import', 'comparison-evidence', 'compatibility']) {
         const filename = path.join(__dirname, '../js', script + '.js');
         vm.runInContext(fs.readFileSync(filename, 'utf8'), context, { filename });
     }
@@ -40,6 +40,24 @@ test('every rating survives a backup restore and a shared URL for every question
         const url = new URL(app.createChecklistShareUrl());
         assert.deepEqual(openChecklist(url.href).parseChecklistShareHash(url.hash).answers, saved);
     }
+});
+
+test('share-link imports accept different MyList hosts and copied Markdown', async () => {
+    const app = openChecklist();
+    await app.saveAnswer('rating-dominate', 'favorite');
+    const firstHash = new URL(app.createChecklistShareUrl()).hash;
+    await app.saveAnswer('rating-dominate', 'willing-to-try');
+    const secondHash = new URL(app.createChecklistShareUrl()).hash;
+
+    const first = app.parseComparisonLink('https://old.example/mylist/share.html' + firstHash);
+    const escaped = 'https\\://new.example/results/#\\' + secondHash.slice(1);
+    const second = app.parseComparisonLink('[MyList results](' + escaped + ')');
+    assert.equal(first.hash, firstHash);
+    assert.equal(second.hash, secondHash);
+    assert.equal(first.checklist.answers['rating-dominate'], 'favorite');
+    assert.equal(second.checklist.answers['rating-dominate'], 'willing-to-try');
+    assert.throws(() => app.parseComparisonLink('https://old.example/share.html#~bad'), /damaged|incomplete|unsupported/);
+    assert.throws(() => app.parseComparisonLink('javascript:void(0)' + firstHash), /Paste the full MyList share link/);
 });
 
 test('new share URLs include saved gender and partner preference even after a prior opt-out', async () => {
@@ -257,7 +275,7 @@ test('comparison uses stated self roles for partner role preferences and treats 
     assert.equal(rows.differences[0].title, 'Strap-on');
     const skipAndMaybe = app.compareChecklists({ 'strapon-r': 'maybe' }, { 'strapon-g': 'not-interested' });
     assert.equal(skipAndMaybe.conflicts, 1);
-    assert.equal(app.compareChecklists(ownAnswers, otherAnswers, 'strict', profiles).matches, 1);
+    assert.equal(app.compareChecklists(ownAnswers, otherAnswers, undefined, profiles).matches, 2);
 });
 
 test('interest levels change the selected overlap and preserve the meaning of every rating', () => {
@@ -280,7 +298,7 @@ test('interest levels change the selected overlap and preserve the meaning of ev
         'rating-poly': 'limit',
         'rating-swinging': 'limit',
     };
-    for (const [mode, expected] of [['strict', 1], ['standard', 2], ['relaxed', 3]]) {
+    for (const [mode, expected] of [['standard', 2], ['relaxed', 3]]) {
         const { matches, confirmedMatches, conflicts, total, rows } = app.compareChecklists(ownAnswers, otherAnswers, mode);
         assert.equal(matches, expected);
         assert.equal(confirmedMatches, 2);
@@ -293,6 +311,52 @@ test('interest levels change the selected overlap and preserve the meaning of ev
         assert.equal(rows.boundaries[0].title, 'Swinging');
         assert.equal(rows.declinedWithoutCounterpart[0].title, 'In-person Planning');
         assert.equal(rows.unansweredLimits[0].title, 'Voice Planning');
+    }
+});
+
+test('willingness against a limit stays visible and is scored as a conflict only in Standard', () => {
+    const app = openChecklist();
+    const ownAnswers = {
+        'rating-mono': 'willing-to-try',
+        'rating-poly': 'favorite',
+        'rating-swinging': 'not-interested',
+        'shibari-g': 'favorite',
+        'shibari-r': 'willing-to-try',
+        'rating-spanked': 'maybe',
+        'rating-spanking': 'like',
+        'adv-detail-you-with-1-female': 'limit',
+    };
+    const otherAnswers = {
+        'rating-mono': 'limit',
+        'rating-poly': 'favorite',
+        'rating-swinging': 'limit',
+        'shibari-r': 'like',
+        'shibari-g': 'favorite',
+        'rating-spanking': 'like',
+        'rating-spanked': 'limit',
+        'adv-detail-you-with-1-male': 'willing-to-try',
+    };
+    const profiles = { ownProfile: { gender: 'male' }, otherProfile: { gender: 'female' } };
+    for (const [mode, matches, conflicts, total] of [['standard', 3, 3, 7], ['relaxed', 4, 1, 5], [undefined, 4, 1, 5]]) {
+        const comparison = app.compareChecklists(ownAnswers, otherAnswers, mode, profiles);
+        assert.equal(comparison.matches, matches);
+        assert.equal(comparison.conflicts, conflicts);
+        assert.equal(comparison.total, total);
+        assert.equal(comparison.pairing.result, 'willingLimits');
+        assert.equal(comparison.rows.willingLimits.length, 2);
+        assert.deepEqual({ ...comparison.breakdown }, {
+            favorite: 1, like: 1, 'willing-to-try': 1, maybe: 1,
+            'willing-limit': 2, limit: 1, 'not-interested': 0, boundary: 1,
+        });
+        const entries = comparison.breakdownRows;
+        assert.equal(entries['willing-limit'][0], comparison.pairing);
+        assert.equal(entries['willing-limit'][1].title, 'Monogamous');
+        assert.equal(entries.favorite[0].title, 'Polyamorous');
+        assert.equal(entries.like[0].ownRating, 'favorite');
+        assert.equal(entries.like[0].otherRating, 'like');
+        assert.equal(entries['willing-to-try'][0].ownRating, 'willing-to-try');
+        assert.equal(entries.maybe[0].result, 'tentativeMatches');
+        assert.equal(entries.boundary[0].title, 'Swinging');
     }
 });
 
@@ -326,7 +390,7 @@ test('related evidence preserves scope and leaves ambiguous age bands for review
     assert.match(compared.evidence.find(row => row.title === 'Adult age preferences').own.text, /overlapping age bands/);
     assert.match(compared.evidence.find(row => row.title === 'General Rope Play and Shibari').other.text, /specific Shibari rating applies/);
     assert.match(getEvidence(24, 'standard').evidence.find(row => row.title === 'Adult age preferences').own.text, /Dealbreaker/);
-    assert.deepEqual(getEvidence(22, 'strict').evidence, getEvidence(22, 'relaxed').evidence);
+    assert.deepEqual(compared.evidence, getEvidence(22, 'relaxed').evidence);
     assert.equal(getEvidence(undefined, 'standard').evidence.some(row => row.title === 'Adult age preferences'), false);
 });
 
@@ -336,7 +400,7 @@ test('one-partner ratings refer to the other person’s gender and count as a si
     const woman = { gender: 'female' };
     const ownAnswers = { 'adv-detail-you-with-1-female': 'favorite', 'adv-detail-you-with-1-male': 'limit' };
     const otherAnswers = { 'adv-detail-you-with-1-male': 'like' };
-    const compared = app.compareChecklists(ownAnswers, otherAnswers, 'strict', { ownProfile: man, otherProfile: woman });
+    const compared = app.compareChecklists(ownAnswers, otherAnswers, 'relaxed', { ownProfile: man, otherProfile: woman });
     assert.equal(compared.total, 1);
     assert.equal(compared.matches, 1);
     assert.equal(compared.pairing.own.id, 'adv-detail-you-with-1-female');
@@ -367,7 +431,7 @@ test('one activity topic keeps both directions and their independent results', (
     assert.equal(shibari.length, 2);
     assert.equal(shibari[0].topicId, shibari[1].topicId);
     assert.equal(shibari[0].own.short, 'Receive');
-    assert.equal(shibari[0].result, 'limits');
+    assert.equal(shibari[0].result, 'willingLimits');
     assert.equal(shibari[1].own.short, 'Give');
     assert.equal(shibari[1].result, 'matches');
     const roles = details.filter(row => row.title === 'Dominant / Submissive');

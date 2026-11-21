@@ -3,7 +3,7 @@
 
     const {
         createAnswerBackup, parseAnswerBackup, importChecklist, clearAnswers, downloadFile,
-        checklistShareHash, parseChecklistShareHash, bindChecklistShareUrl,
+        checklistShareHash, parseChecklistShareHash, parseComparisonLink, bindChecklistShareUrl,
         mountAdultPage, isAnswerStorageEvent, comparisonBackupKey,
         getSavedProfiles, addSavedProfile, selectSavedProfile, renameSavedProfile, removeSavedProfile,
     } = DBList;
@@ -313,11 +313,10 @@
             }
         });
 
-        function reviewShare(hash, source) {
-            startReview(source, source === 'link' ? hash : undefined);
+        function reviewShare(value, source) {
+            startReview(source, source === 'link' ? value : undefined);
             try {
-                if (!hash) throw new Error('Paste a MyList share URL.');
-                const checklist = parseChecklistShareHash(hash);
+                const checklist = source === 'link' ? parseChecklistShareHash(value) : parseComparisonLink(value).checklist;
                 // Sharing permissions belong to the sender's link.
                 delete checklist.profile.shareGender;
                 DBList.includeRatedSections(checklist.answers, checklist.profile);
@@ -330,13 +329,7 @@
 
         urlForm.addEventListener('submit', event => {
             event.preventDefault();
-            let hash = '';
-            try {
-                hash = checklistShareHash(new URL(urlInput.value.trim(), location.href).hash);
-            } catch {
-                // Missing or invalid URLs use the same message.
-            }
-            reviewShare(hash, 'paste');
+            reviewShare(urlInput.value, 'paste');
         });
 
         form.addEventListener('change', event => {

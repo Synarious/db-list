@@ -48,7 +48,7 @@
                     <ul>
                         <li><a href="docs/about.html">About and privacy</a></li>
                         <li><a href="docs/troubleshooting.html">Troubleshooting</a></li>
-                        <li><a href="docs/ios-devices.html">iPhone and iPad downloads</a></li>
+                        <li><a href="docs/ios-devices.html">Sharing on mobile</a></li>
                     </ul>
                 </details>
             </nav>
@@ -130,20 +130,21 @@
             </section>
             <section class="panel results-tools page-actions" aria-label="Share results">
                 <div class="results-tool">
-                    <button type="button" id="download-image" class="page-primary results-share-button" disabled>
+                    <button type="button" id="download-image" class="page-primary results-share-button" disabled hidden>
                         <span class="results-share-icon" aria-hidden="true"></span>
                         Share Image (Download)
                     </button>
                     <div class="actions results-tool-actions">
-                        <label class="image-topic-control">
+                        <label class="image-topic-control" hidden>
                             <input type="checkbox" id="exclude-unrated">
                             Only rated topics in PNG
                         </label>
+                        <p id="mobile-image-export-note" class="note" hidden>Image export is only supported on desktop.</p>
                         <button type="button" id="download-text" class="results-utility" disabled>Download TXT</button>
                     </div>
                     <p id="status" class="results-tool-status" role="status"></p>
                 </div>
-                <span class="results-tool-divider">or</span>
+                <span class="results-tool-divider" hidden>or</span>
                 <div id="share-url-options" class="results-tool" hidden>
                     <button type="button" id="copy-share-link" class="secondary results-share-button" aria-describedby="share-privacy" disabled>
                         <span class="results-share-icon" aria-hidden="true"></span>
